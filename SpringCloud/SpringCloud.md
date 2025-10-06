@@ -139,7 +139,8 @@ void testQueryByIds() {
 
 ### 6.自定义sql
 
-![](F:\SpringCloud\图片\自定义sql.png)
+<img width="1317" height="745" alt="image" src="https://github.com/user-attachments/assets/d3913efa-3680-47ae-87e5-9f989e75cdcd" />
+
 
 #### 1. 调用方法
 
@@ -333,7 +334,8 @@ public List<User> queryUsers(String name, Integer status, Integer minBalance, In
 
 ## Docker常用命令
 
-![](F:\SpringCloud\图片\docker命令.png)
+<img width="1269" height="511" alt="image" src="https://github.com/user-attachments/assets/ce8de4f1-567d-4cf0-8357-2ea24c6c3a93" />
+
 
 | 功能                           | 命令                                                         | 示例                                                   |
 | ------------------------------ | ------------------------------------------------------------ | ------------------------------------------------------ |
@@ -512,7 +514,8 @@ docker update mysql --restart=always
 
 - 密码：安装时设置的（如 `123456`）
 
-  ![](F:\SpringCloud\图片\ip地址.png)
+<img width="1272" height="582" alt="image" src="https://github.com/user-attachments/assets/2ec00d32-0517-4970-ba35-644ebc0bcf61" />
+
 
 ### 9、常见报错及解决办法
 
@@ -758,7 +761,8 @@ nacos/nacos-server:v2.1.0-slim
 docker logs -f nacos
 ```
 
-![](F:\SpringCloud\图片\nacos是否成功.png)
+<img width="1415" height="822" alt="image" src="https://github.com/user-attachments/assets/5bba7587-c7dc-497c-8529-6a9354392d4f" />
+
 
 网络检查：
 
@@ -767,7 +771,8 @@ docker inspect nacos | grep -A 10 "Networks"
 docker inspect mysql | grep -A 10 "Networks"
 ```
 
-![](F:\SpringCloud\图片\nacos和mysql在不在同一网络.png)
+<img width="1057" height="505" alt="image" src="https://github.com/user-attachments/assets/740a3fa4-0748-48fc-8d22-498f8dbd6c1a" />
+
 
 ### 6. 登录控制台
 
@@ -823,7 +828,8 @@ server:
 
 这样，`item-service` 就会有多个实例注册到 Nacos。
 
-![](F:\SpringCloud\图片\多实列部署.png)
+<img width="1822" height="945" alt="image" src="https://github.com/user-attachments/assets/1491a3fe-2ab5-499f-8ad4-746fbfdfd41d" />
+
 
 ##### 为什么要多实例部署？
 
