@@ -1701,9 +1701,10 @@ public RequestInterceptor userInfoRequestInterceptor() {
 </dependency>
 ```
 
-![](F:\SpringCloud\图片\添加配置.png)
+<img width="1839" height="896" alt="image" src="https://github.com/user-attachments/assets/13a8f5d8-6e6e-4194-9593-310b0f60b126" />
 
-![](F:\SpringCloud\图片\编辑配置.png)
+<img width="1792" height="887" alt="image" src="https://github.com/user-attachments/assets/981a97d7-7b90-4879-9e91-4b55c8b13d71" />
+
 
 ------
 
@@ -1766,7 +1767,8 @@ public class CartProperties {
 
 ### 五、Nacos 配置中心添加配置
 
-![](F:\SpringCloud\图片\配置热更新.png)
+<img width="1253" height="624" alt="image" src="https://github.com/user-attachments/assets/f569827f-af0f-4509-87ab-9daf72ff165b" />
+
 
 在 Nacos 控制台中新建配置：
 
