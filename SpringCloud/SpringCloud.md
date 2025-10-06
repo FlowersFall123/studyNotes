@@ -139,7 +139,8 @@ void testQueryByIds() {
 
 ### 6.自定义sql
 
-![](F:\SpringCloud\图片\自定义sql.png)
+<img width="1317" height="745" alt="image" src="https://github.com/user-attachments/assets/d3913efa-3680-47ae-87e5-9f989e75cdcd" />
+
 
 #### 1. 调用方法
 
