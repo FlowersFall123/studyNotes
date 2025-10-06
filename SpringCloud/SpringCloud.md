@@ -1585,3 +1585,204 @@ Spring Boot 启动时会自动扫描所有依赖中 `META-INF/spring.factories` 
 - 让 `MvcConfig` 自动生效
 - 仅在微服务中启用，网关不会加载
 
+#### 八、OpenFeign 用户信息传递
+
+##### 1、原因
+
+在微服务架构中，每个服务都是独立运行的进程。
+ 虽然同属一个系统，但 **不同微服务之间的 ThreadLocal 数据并不会自动传递**。
+
+------
+
+**🧩 示例说明**
+
+1. 用户登录后，**用户信息（userId）被放入 ThreadLocal（UserContext）中**。
+2. 当请求经过拦截器（如 `UserInfoInterceptor`）时，ThreadLocal 能取到当前用户 ID。
+3. **但**：
+    当微服务之间通过 **OpenFeign** 调用时，这个 `ThreadLocal` 是**不会自动传递**的，因为每个微服务都是独立的 JVM。
+
+👉 也就是说，**A 服务调用 B 服务时，B 服务的 ThreadLocal 是新的、空的。**
+
+------
+
+**✅ 因此必须：**
+
+1. 在发起 Feign 请求时，**手动把 userId 放入请求头**；
+2. 在下游服务收到请求后，**从请求头中再取出 userId 并放回 ThreadLocal**；
+3. 请求结束后，**清理 ThreadLocal 防止内存泄漏**。
+
+##### 2、解决方案设计
+
+###### 1️⃣ 在 MVC 拦截器中清理 ThreadLocal
+
+```
+@Override
+public void afterCompletion(HttpServletRequest request, HttpServletResponse response,
+                            Object handler, Exception ex) {
+    // 防止内存泄漏：请求结束后清理
+    UserContext.removeUser();
+}
+```
+
+🔹 **原因**：
+ ThreadLocal 是每个线程独立的存储，如果不清理，线程被线程池复用时，会导致用户信息串号或泄漏。
+
+------
+
+###### 2️⃣ 在 OpenFeign 中添加请求拦截器
+
+创建配置类（例如：`DefaultFeignConfig`）
+
+```
+@Bean
+public RequestInterceptor userInfoRequestInterceptor() {
+    return new RequestInterceptor() {
+        @Override
+        public void apply(RequestTemplate template) {
+            // 获取当前用户ID
+            Long userId = UserContext.getUser();
+            if (userId == null) {
+                // 未登录或非用户请求，直接跳过
+                return;
+            }
+            // 将 userId 放入请求头，传递给下游服务
+            template.header("userId", userId.toString());
+        }
+    };
+}
+```
+
+🟢 **作用**：
+ 当 Feign 发送 HTTP 请求时，自动给每个请求加上 `userId` 请求头。
+
+------
+
+###### 3️⃣ 在微服务中启用 Feign 配置
+
+在你的主启动类或配置类上添加：
+
+```
+@EnableFeignClients(
+    basePackages = "com.hmall.api.client",  // 公共模块 Feign 接口所在包
+    defaultConfiguration = DefaultFeignConfig.class  // 指向上面的拦截器配置
+)
+```
+
+💡 **为什么必须写这个？**
+
+- `basePackages`：告诉 Feign 去哪里找接口（比如 `com.hmall.api.client.ItemClient`）。
+- `defaultConfiguration`：让每个 FeignClient 默认使用你的 `RequestInterceptor`，从而自动携带用户信息。
+
+![](D:\GitHub\studyNotes\SpringCloud\图片\微服务登陆校验.png)
+
+## Spring Cloud Alibaba Nacos 配置管理与共享配置
+
+### 一、依赖配置
+
+在 `pom.xml` 中引入以下依赖：
+
+```
+<!-- Nacos 配置管理 -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+
+<!-- 读取 bootstrap 配置文件 -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bootstrap</artifactId>
+</dependency>
+```
+
+![](F:\SpringCloud\图片\添加配置.png)
+
+![](F:\SpringCloud\图片\编辑配置.png)
+
+------
+
+### 二、bootstrap.yaml 配置（配置管理入口）
+
+> **bootstrap.yaml** 是 Spring Boot 启动时最早加载的配置文件，用于在应用启动前加载 Nacos 配置。
+
+```
+spring:
+  application:
+    name: cart-service # 服务名称
+  profiles:
+    active: dev
+  cloud:
+    nacos:
+      server-addr: 192.168.195.131 # Nacos 服务地址
+      config:
+        file-extension: yaml # 文件后缀名
+        shared-configs:      # 共享配置（可被多个服务共用）
+          - dataId: jdbc.yaml  # 共享数据库配置
+          - dataId: log.yaml   # 共享日志配置
+```
+
+------
+
+### 三、本地配置（application.yaml）
+
+```
+server:
+  port: 8082
+
+hm:
+  db:
+    database: hm-cart
+
+feign:
+  okhttp:
+    enabled: true # 开启 OKHttp 功能（提升 Feign 性能）
+```
+
+------
+
+### 四、配置热更新
+
+1. **创建配置类**
+
+```
+@Component
+@Data
+@ConfigurationProperties(prefix = "hm.cart")
+public class CartProperties {
+    private Integer maxItems;
+}
+```
+
+- 使用 `@ConfigurationProperties` 自动绑定 Nacos 配置。
+- 配合 `@RefreshScope`（如有使用）可实现 **配置热更新**（即修改后自动生效）。
+
+------
+
+### 五、Nacos 配置中心添加配置
+
+![](F:\SpringCloud\图片\配置热更新.png)
+
+在 Nacos 控制台中新建配置：
+
+- **Data ID 格式：**
+
+  ```
+  [服务名]-[spring.profiles.active].[后缀名]
+  ```
+
+- 对于本例：
+
+  ```
+  cart-service-dev.yaml
+  ```
+
+- **内容示例：**
+
+  ```
+  hm:
+    cart:
+      max-items: 10
+  ```
+
+> 修改 `max-items` 值后，应用无需重启，配置会自动刷新（前提是配置类启用了热更新机制）。
+
