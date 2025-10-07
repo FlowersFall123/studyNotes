@@ -1792,3 +1792,254 @@ public class CartProperties {
 
 > 修改 `max-items` 值后，应用无需重启，配置会自动刷新（前提是配置类启用了热更新机制）。
 
+
+
+## 微服务保护笔记（Sentinel）
+
+### 一、雪崩问题简介
+
+> 微服务架构中，**一个服务故障可能会引发级联失败**，导致整个系统不可用。
+>  为防止这种“雪崩”效应，需要使用 **服务保护机制**（限流、隔离、降级、熔断等）。
+
+------
+
+### 二、Sentinel 简介
+
+> **Sentinel** 是阿里巴巴开源的高可用防护框架，主要提供：
+
+- **流量控制（限流）**
+- **熔断降级**
+- **系统自适应保护**
+- **实时监控**
+
+### 📦 下载与启动
+
+#### 1️⃣ 下载
+
+从 GitHub 下载：[Releases · alibaba/Sentinel](https://github.com/alibaba/Sentinel/releases)
+
+#### 2️⃣ 启动
+
+```
+java -Dserver.port=8090 \
+     -Dcsp.sentinel.dashboard.server=localhost:8090 \
+     -Dproject.name=sentinel-dashboard \
+     -jar sentinel-dashboard.jar
+```
+
+访问控制台：http://localhost:8090/
+ **账号：** sentinel
+ **密码：** sentinel
+
+![](F:\SpringCloud\图片\启动sentinel.png)
+
+------
+
+### 三、Spring Cloud 集成 Sentinel
+
+#### 1️⃣ 引入依赖
+
+```
+<!-- Sentinel 服务保护依赖 -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+</dependency>
+```
+
+#### 2️⃣ 配置文件
+
+```
+spring:
+  cloud:
+    sentinel:
+      transport:
+        dashboard: localhost:8090  # Sentinel 控制台地址
+      http-method-specify: true     # 是否将 HTTP 方法作为资源名一部分
+```
+
+------
+
+### 四、服务保护机制
+
+#### （1）请求限流（QPS）
+
+> 控制访问速率，防止瞬时高并发冲击。
+
+操作步骤：
+
+1. 启动控制台，访问应用后，簇点链路会显示资源；
+2. 点击 **“流控”按钮**；
+3. 设置规则：
+   - 模式：**QPS**
+   - 阈值：最大每秒请求数
+
+🧠 **示例：**
+ 当设置 QPS=6 时，超过 6 次/秒 的请求会被拒绝。
+
+![簇点链路](F:\SpringCloud\图片\簇点链路.png)
+
+![限流](F:\SpringCloud\图片\限流.png)
+
+------
+
+#### （2）线程隔离
+
+> 为防止某个接口耗时过长，**阻塞其他接口**，可对其设置线程数限制。
+
+配置方式：
+
+1. 点击流控按钮；
+2. 模式选择：**线程数（并发线程数）**；
+3. 设置并发阈值。
+
+```
+ThreadUtil.sleep(500); // 模拟接口延迟
+```
+
+![延迟](F:\SpringCloud\图片\延迟.png)
+
+📘 **Tomcat资源耗尽示例：**
+
+```
+server:
+  port: 8082
+  tomcat:
+    threads:
+      max: 50           # 最大线程数
+    accept-count: 50    # 最大排队等待数量
+    max-connections: 100
+```
+
+⚙️ 说明：
+
+- 当未设置线程隔离时，一个接口延迟会拖慢所有请求；
+- 设置并发线程数后，仅该资源被限制，其他接口不受影响。
+
+![](F:\SpringCloud\图片\未设置线程数延迟.png)
+
+![并发线程数](F:\SpringCloud\图片\并发线程数.png)
+
+![get失败put成功](F:\SpringCloud\图片\get失败put成功.png)
+
+------
+
+#### （3）Feign 降级与 Fallback
+
+> 当调用下游微服务失败时，使用 **fallback 降级策略** 保证服务可用。
+
+##### 1️⃣ 开启 Sentinel 对 Feign 的支持
+
+```
+feign:
+  sentinel:
+    enabled: true
+```
+
+##### 2️⃣ 编写 FallbackFactory
+
+```
+@Slf4j
+public class ItemClientFallbackFactory implements FallbackFactory<ItemClient> {
+    @Override
+    public ItemClient create(Throwable cause) {
+        return new ItemClient() {
+            @Override
+            public List<ItemDTO> queryByIds(Collection<Long> ids) {
+                log.error("查询商品失败！原因：", cause);
+                return CollUtils.emptyList();
+            }
+
+            @Override
+            public void deductStock(List<OrderDetailDTO> items) {
+                log.error("扣减商品库存失败！原因：", cause);
+                throw new RuntimeException(cause);
+            }
+        };
+    }
+}
+```
+
+##### 3️⃣ 注册 Bean
+
+```
+@Bean
+public ItemClientFallbackFactory itemClientFallbackFactory() {
+    return new ItemClientFallbackFactory();
+}
+```
+
+> ⚙️ 该 `@Bean` 写在 **DefaultFeignConfig** 中，因为该配置类已被 `@EnableFeignClients` 扫描：
+
+```
+@EnableFeignClients(
+    basePackages = "com.hmall.api.client",  
+    defaultConfiguration = DefaultFeignConfig.class
+)
+```
+
+##### 4️⃣ FeignClient 中指定降级类
+
+```
+@FeignClient(value = "item-service", fallbackFactory = ItemClientFallbackFactory.class)
+public interface ItemClient { ... }
+```
+
+💡 **这样即使下游服务失败，也不会抛出异常，而是使用 Fallback 返回默认数据或执行备用逻辑。**
+
+------
+
+#### （4）Controller 层的降级处理
+
+如果不是 Feign 调用，而是在 **Controller 层的接口**，可以使用：
+
+##### ✅ Sentinel 注解方式：
+
+```
+@GetMapping("/items")
+@SentinelResource(value = "queryItems", fallback = "fallbackHandler")
+public List<ItemDTO> queryItems() {
+    // 模拟异常
+    if (true) throw new RuntimeException("服务异常");
+    return itemService.findAll();
+}
+
+// 降级方法
+public List<ItemDTO> fallbackHandler(Throwable ex) {
+    log.error("queryItems 服务降级：", ex);
+    return CollUtils.emptyList();
+}
+```
+
+> 📌 注意：
+>
+> - `@SentinelResource` 注解用于标记资源；
+> - `fallback` 指定降级方法；
+> - 降级方法签名需与原方法一致，并可多一个 `Throwable` 参数；
+> - **⚠️ 该注解只能标注在具体方法上，不能标注在类上。**
+>    （因为 Sentinel 以“方法调用”为粒度创建资源入口，类本身不执行逻辑，无法被 Sentinel 监控。）
+> - **✅ 在 Controller 层使用 `@SentinelResource` 不需要实现 `FallbackFactory`。**
+>    `FallbackFactory` 仅在 **Feign 调用远程服务** 时使用，用于在服务不可用时提供备用逻辑；
+>    而 `@SentinelResource` 适用于 **本地方法（Controller 或 Service）** 的异常降级，两者机制不同。
+
+#### （5）熔断（Circuit Breaker）
+
+> 当某个接口**错误率过高**或**响应时间过长**时，自动“熔断”该接口一段时间，避免继续请求。
+
+配置方式：
+
+- 在 Sentinel 控制台选择“熔断降级”；
+- 选择资源；
+- 选择触发类型：
+  1. **RT**（平均响应时间）
+  2. **异常比例**（如>50%异常）
+  3. **异常数**（如连续出错5次）
+- 设置熔断时间（如5秒）。
+
+🧠 熔断状态：
+
+- **Closed**：正常状态；
+- **Open**：熔断状态，拒绝请求；
+- **Half-Open**：探测状态，允许部分请求测试恢复。
+
+![熔断](F:\SpringCloud\图片\熔断.png)
