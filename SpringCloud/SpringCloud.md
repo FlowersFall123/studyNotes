@@ -1833,7 +1833,7 @@ java -Dserver.port=8090 \
  **账号：** sentinel
  **密码：** sentinel
 
-![](F:\SpringCloud\图片\启动sentinel.png)
+<img width="1026" height="777" alt="image" src="https://github.com/user-attachments/assets/9138a7d5-4102-4ca9-9a5a-6e0ae670b712" />
 
 ------
 
@@ -1879,9 +1879,9 @@ spring:
 🧠 **示例：**
  当设置 QPS=6 时，超过 6 次/秒 的请求会被拒绝。
 
-![簇点链路](F:\SpringCloud\图片\簇点链路.png)
+<img width="1817" height="947" alt="image" src="https://github.com/user-attachments/assets/d533e0f1-2b7c-43eb-af6b-d041a8715e74" />
 
-![限流](F:\SpringCloud\图片\限流.png)
+<img width="1576" height="788" alt="image" src="https://github.com/user-attachments/assets/80c1f1c0-ff0e-45f0-a3de-abef42269284" />
 
 ------
 
@@ -1898,8 +1898,8 @@ spring:
 ```
 ThreadUtil.sleep(500); // 模拟接口延迟
 ```
+<img width="1810" height="869" alt="image" src="https://github.com/user-attachments/assets/a3c093d0-35ed-4a73-9f7a-ec233b6cca96" />
 
-![延迟](F:\SpringCloud\图片\延迟.png)
 
 📘 **Tomcat资源耗尽示例：**
 
@@ -1918,11 +1918,11 @@ server:
 - 当未设置线程隔离时，一个接口延迟会拖慢所有请求；
 - 设置并发线程数后，仅该资源被限制，其他接口不受影响。
 
-![](F:\SpringCloud\图片\未设置线程数延迟.png)
+<img width="1827" height="737" alt="image" src="https://github.com/user-attachments/assets/95310f5e-2de0-41b0-a4fe-f30f2c7c3857" />
 
-![并发线程数](F:\SpringCloud\图片\并发线程数.png)
+<img width="1534" height="766" alt="image" src="https://github.com/user-attachments/assets/16ebd10f-2a74-433f-aa84-2e659a210946" />
 
-![get失败put成功](F:\SpringCloud\图片\get失败put成功.png)
+<img width="1803" height="900" alt="image" src="https://github.com/user-attachments/assets/8c2ab940-9089-44b3-99e8-260c0bc925e5" />
 
 ------
 
@@ -1988,6 +1988,7 @@ public interface ItemClient { ... }
 ```
 
 💡 **这样即使下游服务失败，也不会抛出异常，而是使用 Fallback 返回默认数据或执行备用逻辑。**
+<img width="1497" height="811" alt="image" src="https://github.com/user-attachments/assets/c101cf80-773e-4466-9d4e-cdb271e142da" />
 
 ------
 
@@ -2043,5 +2044,7 @@ public List<ItemDTO> fallbackHandler(Throwable ex) {
 - **Closed**：正常状态；
 - **Open**：熔断状态，拒绝请求；
 - **Half-Open**：探测状态，允许部分请求测试恢复。
+ <img width="1533" height="788" alt="image" src="https://github.com/user-attachments/assets/6dbc4970-3fd6-4642-affd-4267df474798" />
+
 
 ![熔断](F:\SpringCloud\图片\熔断.png)
