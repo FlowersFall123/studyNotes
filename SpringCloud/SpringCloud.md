@@ -2045,6 +2045,3 @@ public List<ItemDTO> fallbackHandler(Throwable ex) {
 - **Open**：熔断状态，拒绝请求；
 - **Half-Open**：探测状态，允许部分请求测试恢复。
  <img width="1533" height="788" alt="image" src="https://github.com/user-attachments/assets/6dbc4970-3fd6-4642-affd-4267df474798" />
-
-
-![熔断](F:\SpringCloud\图片\熔断.png)
