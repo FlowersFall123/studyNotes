@@ -763,12 +763,19 @@ docker logs -f nacos
 
 <img width="1415" height="822" alt="image" src="https://github.com/user-attachments/assets/5bba7587-c7dc-497c-8529-6a9354392d4f" />
 
-
-网络检查：
+**网络检查：**
 
 ```
-docker inspect nacos | grep -A 10 "Networks"
-docker inspect mysql | grep -A 10 "Networks"
+docker inspect nacos 
+docker inspect mysql 
+或者
+docker network ls
+```
+
+**不在同一网络可以通过以下命令进操作**
+
+```Shell
+docker network connect [网络名] [容器名]
 ```
 
 <img width="1057" height="505" alt="image" src="https://github.com/user-attachments/assets/740a3fa4-0748-48fc-8d22-498f8dbd6c1a" />
@@ -2045,3 +2052,90 @@ public List<ItemDTO> fallbackHandler(Throwable ex) {
 - **Open**：熔断状态，拒绝请求；
 - **Half-Open**：探测状态，允许部分请求测试恢复。
  <img width="1533" height="788" alt="image" src="https://github.com/user-attachments/assets/6dbc4970-3fd6-4642-affd-4267df474798" />
+
+## 分布式事务介绍
+
+**分布式事务**就是在 **多个服务或多个数据库** 之间的事务，它保证跨系统操作的原子性。
+
+- 在微服务架构下，每个服务有自己的数据库。
+- 一个业务操作可能涉及多个服务的数据库更新。
+- 如何保证这些操作要么全部成功，要么全部回滚，就是分布式事务要解决的问题。
+
+**例子**：电商下单场景
+
+1. **订单服务**：生成订单
+2. **库存服务**：扣减库存
+3. **支付服务**：扣减用户余额
+
+如果扣库存成功，但支付失败，就会出现数据不一致。
+ 分布式事务的目标：**保证三个服务的操作要么全部成功，要么全部回滚。**
+
+## **Seata 分布式部署**
+
+### 1️⃣ 准备工作
+
+1. 下载 Seata 相关文件：`seata-1.5.2.tar` 或直接使用 Docker 镜像 `seataio/seata-server:1.5.2`。
+2. 数据库准备：
+   - 运行 `seata-tc.sql` 脚本，创建 Seata 所需的数据库及表。
+   - 注意：如果之前执行过，可能会出现重复键错误（Duplicate entry），可清理数据库后再执行。
+
+------
+
+### 2️⃣ 加载 Docker 镜像
+
+#### 方法一：使用本地 tar 文件
+
+```
+docker load -i seata-1.5.2.tar
+```
+
+#### 方法二：直接从 Docker Hub 拉取
+
+```
+docker pull seataio/seata-server:1.5.2
+```
+
+------
+
+### 3️⃣ 启动 Seata Server
+
+```
+docker run --name seata \
+  -p 8099:8099 \       # 控制台端口
+  -p 7099:7099 \       # TC 端口
+  -e SEATA_IP=192.168.195.131 \  # 本机 IP
+  -v ./seata:/seata-server/resources \ # 配置挂载
+  --privileged=true \
+  --network hm-net \    # 指定 Docker 网络
+  -d \
+  seataio/seata-server:1.5.2
+```
+
+#### 参数说明
+
+| 参数                                 | 说明                                 |
+| ------------------------------------ | ------------------------------------ |
+| `-p 8099:8099`                       | Seata 控制台访问端口                 |
+| `-p 7099:7099`                       | Seata TC（事务协调器）端口           |
+| `-e SEATA_IP=...`                    | 指定 Seata 服务监听的 IP             |
+| `-v ./seata:/seata-server/resources` | 挂载本地配置文件                     |
+| `--network`                          | 加入指定 Docker 网络，便于微服务访问 |
+| `--privileged`                       | 提升权限（有些操作需要）             |
+| `-d`                                 | 后台运行容器                         |
+
+------
+
+### 4️⃣ 查看 Seata 日志
+
+```
+docker logs -f seata
+```
+
+- 用于监控 Seata Server 启动情况及报错信息。
+
+------
+
+### 5️⃣ 访问 Seata 控制台
+
+- 浏览器访问：http://192.168.195.131:8099/
+- 默认账号密码：`admin` / `admin`
