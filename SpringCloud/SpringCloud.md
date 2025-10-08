@@ -2198,8 +2198,8 @@ spring:
         shared-configs:
           - dataId: seata.yaml
 ```
+<img width="1125" height="521" alt="image" src="https://github.com/user-attachments/assets/0438238e-9229-4adf-a002-dd0f05129835" />
 
-![seata配置共享](F:\SpringCloud\图片\seata配置共享.png)
 
 ### 8️⃣ Seata 配置示例（Nacos中）
 
@@ -2221,12 +2221,12 @@ seata:
 ```
 
 > 💡 **注意**：`tx-service-group` 名称可自定义，但需与 TC 映射保持一致。
+<img width="1221" height="510" alt="image" src="https://github.com/user-attachments/assets/3637098c-c1ea-4473-a72e-eeef7f2bcf08" />
 
-![seata](F:\SpringCloud\图片\seata.png)
 
 重启项目后可以通过`docker logs -f seata`查看是否成功
+<img width="1594" height="572" alt="image" src="https://github.com/user-attachments/assets/09348669-21d8-471e-b89c-3ada08329f77" />
 
-![配置成功查看](F:\SpringCloud\图片\配置成功查看.png)
 
 ### 9️⃣ 事务模式配置
 
@@ -2238,8 +2238,8 @@ Nacos 中添加共享配置：
 seata:
   data-source-proxy-mode: XA
 ```
+<img width="1681" height="830" alt="image" src="https://github.com/user-attachments/assets/c32d7748-b7eb-412d-8857-8324f79dfd86" />
 
-![XA配置](F:\SpringCloud\图片\XA配置.png)
 
 业务方法上标注：
 
@@ -2249,8 +2249,8 @@ public void yourBizMethod() {
     ...
 }
 ```
+<img width="903" height="480" alt="image" src="https://github.com/user-attachments/assets/a2ad03f0-6601-4737-bdca-7e19584b9e5e" />
 
-![XA](F:\SpringCloud\图片\XA.png)
 
 #### XA 模式流程
 
@@ -2260,8 +2260,8 @@ public void yourBizMethod() {
 ------
 
 #### 🔹 AT 模式（最终一致性）
+<img width="914" height="499" alt="image" src="https://github.com/user-attachments/assets/3a4a79eb-a1be-4835-93c0-e5ba5af6f49d" />
 
-![AT](F:\SpringCloud\图片\AT.png)
 
 每个微服务业务数据库需创建 `undo_log` 表：
 
@@ -2291,8 +2291,8 @@ seata:
 @GlobalTransactional
 public void yourBizMethod() { ... }
 ```
+<img width="1632" height="559" alt="image" src="https://github.com/user-attachments/assets/21cf00c9-4df1-4aa9-978d-62d9a06b59d3" />
 
-![回滚](F:\SpringCloud\图片\回滚.png)
 
 ------
 
