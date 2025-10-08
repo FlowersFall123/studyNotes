@@ -2070,26 +2070,36 @@ public List<ItemDTO> fallbackHandler(Throwable ex) {
 如果扣库存成功，但支付失败，就会出现数据不一致。
  分布式事务的目标：**保证三个服务的操作要么全部成功，要么全部回滚。**
 
-## **Seata 分布式部署**
+## Seata 分布式部署笔记
 
 ### 1️⃣ 准备工作
 
-1. 下载 Seata 相关文件：`seata-1.5.2.tar` 或直接使用 Docker 镜像 `seataio/seata-server:1.5.2`。
-2. 数据库准备：
-   - 运行 `seata-tc.sql` 脚本，创建 Seata 所需的数据库及表。
-   - 注意：如果之前执行过，可能会出现重复键错误（Duplicate entry），可清理数据库后再执行。
+1. **下载 Seata**
+
+   - 从官网下载 `seata-1.5.2.tar`
+
+   - 或直接使用 Docker 镜像：
+
+     ```
+     docker pull seataio/seata-server:1.5.2
+     ```
+
+2. **数据库准备**
+
+   - 执行 `seata-tc.sql` 脚本，创建 Seata 所需表结构。
+   - 若出现 `Duplicate entry` 错误，可清空数据库后重新导入。
 
 ------
 
 ### 2️⃣ 加载 Docker 镜像
 
-#### 方法一：使用本地 tar 文件
+#### 方法一：加载本地文件
 
 ```
 docker load -i seata-1.5.2.tar
 ```
 
-#### 方法二：直接从 Docker Hub 拉取
+#### 方法二：从 Docker Hub 拉取
 
 ```
 docker pull seataio/seata-server:1.5.2
@@ -2101,12 +2111,12 @@ docker pull seataio/seata-server:1.5.2
 
 ```
 docker run --name seata \
-  -p 8099:8099 \       # 控制台端口
-  -p 7099:7099 \       # TC 端口
-  -e SEATA_IP=192.168.195.131 \  # 本机 IP
-  -v ./seata:/seata-server/resources \ # 配置挂载
+  -p 8099:8099 \               # 控制台端口
+  -p 7099:7099 \               # 事务协调器端口
+  -e SEATA_IP=192.168.195.131 \ # 本机 IP
+  -v ./seata:/seata-server/resources \ # 挂载配置文件
   --privileged=true \
-  --network hm-net \    # 指定 Docker 网络
+  --network hm-net \           # 指定 Docker 网络
   -d \
   seataio/seata-server:1.5.2
 ```
@@ -2115,27 +2125,183 @@ docker run --name seata \
 
 | 参数                                 | 说明                                 |
 | ------------------------------------ | ------------------------------------ |
-| `-p 8099:8099`                       | Seata 控制台访问端口                 |
-| `-p 7099:7099`                       | Seata TC（事务协调器）端口           |
-| `-e SEATA_IP=...`                    | 指定 Seata 服务监听的 IP             |
-| `-v ./seata:/seata-server/resources` | 挂载本地配置文件                     |
-| `--network`                          | 加入指定 Docker 网络，便于微服务访问 |
-| `--privileged`                       | 提升权限（有些操作需要）             |
+| `-p 8099:8099`                       | 控制台访问端口                       |
+| `-p 7099:7099`                       | TC（事务协调器）端口                 |
+| `-e SEATA_IP`                        | 指定服务 IP                          |
+| `-v ./seata:/seata-server/resources` | 挂载配置文件目录                     |
+| `--network`                          | 指定 Docker 网络（便于与微服务通信） |
+| `--privileged`                       | 提升容器权限                         |
 | `-d`                                 | 后台运行容器                         |
 
 ------
 
-### 4️⃣ 查看 Seata 日志
+### 4️⃣ 查看日志
 
 ```
 docker logs -f seata
 ```
 
-- 用于监控 Seata Server 启动情况及报错信息。
+可实时查看 Seata 启动和运行状态。
 
 ------
 
-### 5️⃣ 访问 Seata 控制台
+### 5️⃣ 访问控制台
 
 - 浏览器访问：http://192.168.195.131:8099/
-- 默认账号密码：`admin` / `admin`
+- 默认账号密码：`admin / admin`
+
+------
+
+### 6️⃣ 项目依赖配置
+
+在 `pom.xml` 中加入：
+
+```
+<!-- 统一配置中心 -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
+</dependency>
+
+<!-- 提前加载 bootstrap.yaml -->
+<dependency>
+    <groupId>org.springframework.cloud</groupId>
+    <artifactId>spring-cloud-starter-bootstrap</artifactId>
+</dependency>
+
+<!-- Seata 分布式事务 -->
+<dependency>
+    <groupId>com.alibaba.cloud</groupId>
+    <artifactId>spring-cloud-starter-alibaba-seata</artifactId>
+</dependency>
+```
+
+✅ **说明**
+
+- `nacos-config`：统一配置中心
+- `bootstrap`：提前加载配置
+- `seata`：集成分布式事务框架
+
+------
+
+### 7️⃣ Nacos 共享配置
+
+在 **Nacos** 新建配置文件 `seata.yaml`，用于各微服务共享 Seata 配置。
+
+在 `bootstrap.yaml` 中引用：
+
+```
+spring:
+  cloud:
+    nacos:
+      config:
+        shared-configs:
+          - dataId: seata.yaml
+```
+
+![seata配置共享](F:\SpringCloud\图片\seata配置共享.png)
+
+### 8️⃣ Seata 配置示例（Nacos中）
+
+```
+seata:
+  registry:
+    type: nacos
+    nacos:
+      server-addr: 192.168.195.131:8848
+      namespace: ""
+      group: DEFAULT_GROUP
+      application: seata-server
+      username: nacos
+      password: nacos
+  tx-service-group: hmall
+  service:
+    vgroup-mapping:
+      hmall: "default"
+```
+
+> 💡 **注意**：`tx-service-group` 名称可自定义，但需与 TC 映射保持一致。
+
+![seata](F:\SpringCloud\图片\seata.png)
+
+重启项目后可以通过`docker logs -f seata`查看是否成功
+
+![配置成功查看](F:\SpringCloud\图片\配置成功查看.png)
+
+### 9️⃣ 事务模式配置
+
+#### 🔹 XA 模式（强一致性）
+
+Nacos 中添加共享配置：
+
+```
+seata:
+  data-source-proxy-mode: XA
+```
+
+![XA配置](F:\SpringCloud\图片\XA配置.png)
+
+业务方法上标注：
+
+```
+@GlobalTransactional
+public void yourBizMethod() {
+    ...
+}
+```
+
+![XA](F:\SpringCloud\图片\XA.png)
+
+#### XA 模式流程
+
+- **一阶段**：协调者通知各参与者执行本地事务 → 不提交，保持锁。
+- **二阶段**：协调者根据结果决定提交或回滚。
+
+------
+
+#### 🔹 AT 模式（最终一致性）
+
+![AT](F:\SpringCloud\图片\AT.png)
+
+每个微服务业务数据库需创建 `undo_log` 表：
+
+```
+CREATE TABLE IF NOT EXISTS `undo_log` (
+  `branch_id` BIGINT NOT NULL COMMENT 'branch transaction id',
+  `xid` VARCHAR(128) NOT NULL COMMENT 'global transaction id',
+  `context` VARCHAR(128) NOT NULL COMMENT 'undo_log context',
+  `rollback_info` LONGBLOB NOT NULL COMMENT 'rollback info',
+  `log_status` INT(11) NOT NULL COMMENT '0:normal status,1:defense status',
+  `log_created` DATETIME(6) NOT NULL COMMENT 'create datetime',
+  `log_modified` DATETIME(6) NOT NULL COMMENT 'modify datetime',
+  UNIQUE KEY `ux_undo_log` (`xid`, `branch_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AT transaction mode undo table';
+```
+
+Nacos 配置（AT 是默认模式）：
+
+```
+seata:
+  data-source-proxy-mode: AT
+```
+
+业务方法同样加：
+
+```
+@GlobalTransactional
+public void yourBizMethod() { ... }
+```
+
+![回滚](F:\SpringCloud\图片\回滚.png)
+
+------
+
+### 🔍 AT 与 XA 模式区别
+
+| 对比项   | XA 模式              | AT 模式            |
+| -------- | -------------------- | ------------------ |
+| 一阶段   | 不提交事务，锁定资源 | 直接提交，不锁资源 |
+| 回滚机制 | 数据库原生机制       | 通过快照回滚       |
+| 一致性   | 强一致               | 最终一致           |
+| 性能     | 较低（阻塞）         | 较高（异步回滚）   |
+| 适用场景 | 金融、强事务要求     | 电商、订单系统等   |
