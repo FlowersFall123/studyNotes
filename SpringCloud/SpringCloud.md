@@ -1831,10 +1831,7 @@ public class CartProperties {
 #### 2️⃣ 启动
 
 ```
-java -Dserver.port=8090 \
-     -Dcsp.sentinel.dashboard.server=localhost:8090 \
-     -Dproject.name=sentinel-dashboard \
-     -jar sentinel-dashboard.jar
+java -Dserver.port=8090 -Dcsp.sentinel.dashboard.server=localhost:8090 -Dproject.name=sentinel-dashboard -jar sentinel-dashboard.jar
 ```
 
 访问控制台：http://localhost:8090/
