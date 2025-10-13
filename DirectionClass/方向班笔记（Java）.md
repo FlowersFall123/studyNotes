@@ -189,3 +189,448 @@ int y = x.intValue(); // 或直接 y = x;
 
 以 `@` 开头，用于类、方法、属性等。
  常见注解：`@Override`、`@Deprecated`、`@SuppressWarnings`
+
+## 十五、面向对象（OOP）
+
+### 1. 类与对象
+
+| 概念               | 说明                     |
+| ------------------ | ------------------------ |
+| **类（Class）**    | 对象的集合，是抽象的模板 |
+| **对象（Object）** | 类的一个具体实例         |
+| **关键字**         | `class`                  |
+| **特征**           | 属性（成员变量）         |
+| **行为**           | 方法（函数）             |
+
+```
+class Person {
+    String name;
+    int age;
+
+    void sayHello() {
+        System.out.println("Hello, my name is " + name);
+    }
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Person p = new Person();
+        p.name = "Tom";
+        p.age = 18;
+        p.sayHello();
+    }
+}
+```
+
+------
+
+### 2. 继承（extends）
+
+- 使用关键字 `extends`。
+- Java 中是 **单继承**。
+- 不能继承：
+  - 父类的 `private` 成员
+  - 构造方法
+  - 不同包下的 `default` 成员
+- 子类可以继承父类的 `public`、`protected` 成员。
+
+```
+class Animal {
+    public void eat() { System.out.println("Animal eat"); }
+}
+
+class Dog extends Animal {
+    public void bark() { System.out.println("Dog bark"); }
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Dog dog = new Dog();
+        dog.eat();
+        dog.bark();
+    }
+}
+```
+
+------
+
+### 3. 封装（Encapsulation）
+
+- 使用 `private` 修饰属性
+- 通过 `public` 的 get/set 方法来访问属性
+
+```
+class Student {
+    private String name;
+
+    public void setName(String n) {
+        this.name = n;
+    }
+    public String getName() {
+        return name;
+    }
+}
+```
+
+------
+
+### 4. 多态（Polymorphism）
+
+- **重写（Override）**：方法名、参数列表相同，方法体不同（子类重写父类）。
+- **重载（Overload）**：方法名相同，参数列表不同（参数个数或类型不同）。
+
+```
+class Animal {
+    public void speak() { System.out.println("Animal sound"); }
+}
+
+class Dog extends Animal {
+    @Override
+    public void speak() { System.out.println("Dog bark"); }
+}
+
+class MathTool {
+    int add(int a, int b){ return a + b; }
+    double add(double a, double b){ return a + b; }
+}
+```
+
+------
+
+## 十六、数组（Array）
+
+1. **声明**
+
+```
+int[] arr1;
+int arr2[];
+```
+
+1. **数组长度**：固定
+2. **初始化**
+
+```
+int[] arr = new int[5];
+int[] arr2 = {1, 2, 3, 4};
+```
+
+1. **赋值**
+
+```
+arr[0] = 100;
+```
+
+1. **长度属性**
+
+```
+System.out.println(arr.length);
+```
+
+1. **索引最大值**
+    `arr.length - 1`，索引从 0 开始
+2. **排序**（使用 `Arrays.sort`）
+
+```
+import java.util.Arrays;
+int[] nums = {3, 1, 4};
+Arrays.sort(nums);
+```
+
+引用类型排序需实现 `Comparable` 接口。
+
+------
+
+## 十七、集合框架（Collection Framework）
+
+### 1. Collection
+
+| 类型     | 特性                 | 常见实现类                |
+| -------- | -------------------- | ------------------------- |
+| **List** | 有序、可重复、可索引 | `ArrayList`, `LinkedList` |
+| **Set**  | 无序、不可重复       | `HashSet`, `TreeSet`      |
+
+常用方法：`add()`、`remove()`、`contains()`、`iterator()`、`size()`、`clear()`、`isEmpty()`
+
+### 2. Map
+
+| 特性         | 示例                                          |
+| ------------ | --------------------------------------------- |
+| 键值对存储   | `Map<String, Integer> map = new HashMap<>();` |
+| 键不可重复   | 重复键会覆盖旧值                              |
+| 可存 null 键 | 仅一个 null 键（HashMap）                     |
+
+```
+Map<String, Integer> map = new HashMap<>();
+map.put("Tom", 18);
+map.put("Jerry", 20);
+```
+
+### 3. Comparator 比较器
+
+- `Comparable`：类内部定义排序规则
+- `Comparator`：类外定义排序规则
+
+------
+
+## 十八、枚举（Enum）
+
+### 1. 枚举定义与使用
+
+```
+enum Season {
+    SPRING, SUMMER, AUTUMN, WINTER
+}
+
+public class Test {
+    public static void main(String[] args) {
+        Season s = Season.SPRING;
+        System.out.println(s);
+    }
+}
+```
+
+- 枚举默认继承 `Enum` 类
+- 可定义属性和方法
+- 可用于表示固定常量（如状态、方向、星期）
+
+------
+
+## 十九、常用工具类
+
+### 1. `Math`
+
+```
+System.out.println(Math.abs(-5));  // 绝对值
+System.out.println(Math.pow(2, 3)); // 幂
+System.out.println(Math.sqrt(16));  // 开方
+```
+
+### 2. `Random`
+
+```
+Random r = new Random();
+int num = r.nextInt(100);  // 0-99随机数
+```
+
+### 3. `Date` & `Calendar`
+
+```
+Date date = new Date();
+System.out.println(date);
+
+Calendar c = Calendar.getInstance();
+System.out.println(c.get(Calendar.YEAR));
+```
+
+------
+
+## 二十、字符串处理
+
+### `StringBuffer` 与 `StringBuilder`
+
+- **StringBuffer**：线程安全（适合多线程）
+- **StringBuilder**：非线程安全（速度更快）
+
+```
+StringBuilder sb = new StringBuilder("Hello");
+sb.append(" World");
+System.out.println(sb.toString());
+```
+
+------
+
+## 二十一、异常处理
+
+### 1. 异常分类
+
+- `Throwable`
+  - `Error`（系统错误，不可恢复）
+  - `Exception`（程序异常，可处理）
+
+### 2. 捕获异常
+
+```
+try {
+    int x = 10 / 0;
+} catch (Exception e) {
+    System.out.println("异常：" + e.getMessage());
+} finally {
+    System.out.println("不管是否异常都会执行");
+}
+```
+
+### 3. 自定义异常
+
+```
+class MyException extends Exception {
+    public MyException(String msg) {
+        super(msg);
+    }
+}
+
+public class Test {
+    public static void main(String[] args) throws MyException {
+        throw new MyException("自定义异常");
+    }
+}
+```
+
+------
+
+## 二十二、泛型（Generics）
+
+| 符号 | 含义            |
+| ---- | --------------- |
+| `E`  | Element（元素） |
+| `T`  | Type（类型）    |
+| `K`  | Key（键）       |
+| `V`  | Value（值）     |
+| `?`  | 通配符          |
+
+```
+List<String> list = new ArrayList<>();
+```
+
+### 通配符：
+
+- `<? extends superclass>`：上限通配，表示某个类的子类
+- `<? super subclass>`：下限通配，表示某个类的父类
+
+------
+
+## 二十三、多线程
+
+### 1. 线程生命周期
+
+- 创建 → 就绪 → 运行 → 阻塞 → 死亡
+
+### 2. 创建方式
+
+```
+// 继承Thread
+class MyThread extends Thread {
+    public void run() {
+        System.out.println("线程运行");
+    }
+}
+
+// 实现Runnable
+class MyRun implements Runnable {
+    public void run() {
+        System.out.println("线程运行");
+    }
+}
+```
+
+### 3. 死锁四条件
+
+- 互斥
+- 占有且申请
+- 不可抢占
+- 循环等待
+
+### 4. 守护线程
+
+```
+Thread t = new Thread();
+t.setDaemon(true);  // 设置为守护线程
+```
+
+------
+
+## 二十四、锁
+
+- **作用**：保证多线程访问共享资源时的线程安全
+- **常用方式**：
+  - `synchronized` 关键字
+  - `ReentrantLock` 可重入锁
+
+```
+synchronized (this) {
+    // 同步代码块
+}
+```
+
+------
+
+## 二十五、IO 流
+
+### 1.分类
+
+| 分类   | 说明           | 示例                          |
+| ------ | -------------- | ----------------------------- |
+| 字节流 | 处理二进制数据 | `InputStream`, `OutputStream` |
+| 字符流 | 处理文本数据   | `Reader`, `Writer`            |
+
+| 方向   | 示例               |
+| ------ | ------------------ |
+| 输入流 | `FileInputStream`  |
+| 输出流 | `FileOutputStream` |
+
+### 2. 读取与写入
+
+```
+FileInputStream in = new FileInputStream("a.txt");
+FileOutputStream out = new FileOutputStream("b.txt");
+int c;
+while ((c = in.read()) != -1) {
+    out.write(c);
+}
+in.close();
+out.close();
+```
+
+### 3. 序列化与反序列化
+
+```
+ObjectOutputStream oos = new ObjectOutputStream(new FileOutputStream("data.obj"));
+oos.writeObject(obj);
+
+ObjectInputStream ois = new ObjectInputStream(new FileInputStream("data.obj"));
+Object o = ois.readObject();
+```
+
+- 类必须实现 `Serializable` 接口
+
+------
+
+## 二十六、接口与抽象类
+
+### 1. 接口（interface）
+
+- 使用 `interface` 声明
+- 使用 `implements` 实现
+- 只能包含 `public static final` 常量和 `abstract` 方法（JDK 8 以后可包含默认方法和静态方法）
+- **支持多实现**
+
+```
+interface Flyable {
+    void fly();
+}
+
+class Bird implements Flyable {
+    public void fly() {
+        System.out.println("Bird is flying");
+    }
+}
+```
+
+------
+
+### 2. 抽象类（abstract class）
+
+- 使用 `abstract class` 声明
+- 使用 `extends` 继承
+- 可以包含抽象方法和具体方法
+- 只能单继承
+
+```
+abstract class Animal {
+    abstract void makeSound();
+    void eat() { System.out.println("Animal eats"); }
+}
+
+class Dog extends Animal {
+    void makeSound() { System.out.println("Dog barks"); }
+}
+```
