@@ -731,7 +731,7 @@ MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=
 
 ------
 
-### 3. 创建 `nacos.sql`（可以把文件建好上传）
+### 3. 创建 `nacos.sql`（可以把文件建好并运行）
 
 Nacos 启动需要的表结构和默认账号，官方提供了 **mysql-schema.sql** 文件：
 
@@ -2070,6 +2070,8 @@ public List<ItemDTO> fallbackHandler(Throwable ex) {
 
 ## Seata 分布式部署笔记
 
+**参考链接：**[day05-服务保护和分布式事务 - 飞书云文档](https://b11et3un53m.feishu.cn/wiki/QfVrw3sZvihmnPkmALYcUHIDnff)
+
 ### 1️⃣ 准备工作
 
 1. **下载 Seata**
@@ -2079,13 +2081,15 @@ public List<ItemDTO> fallbackHandler(Throwable ex) {
    - 或直接使用 Docker 镜像：
 
      ```
-     docker pull seataio/seata-server:1.5.2
+     docker pull seata/seata-server:1.5.2
      ```
 
 2. **数据库准备**
 
    - 执行 `seata-tc.sql` 脚本，创建 Seata 所需表结构。
    - 若出现 `Duplicate entry` 错误，可清空数据库后重新导入。
+   
+3. **拖入seata文件（文件夹里面有）**
 
 ------
 
@@ -2109,14 +2113,18 @@ docker pull seataio/seata-server:1.5.2
 
 ```
 docker run --name seata \
-  -p 8099:8099 \               # 控制台端口
-  -p 7099:7099 \               # 事务协调器端口
-  -e SEATA_IP=192.168.195.131 \ # 本机 IP
-  -v ./seata:/seata-server/resources \ # 挂载配置文件
-  --privileged=true \
-  --network hm-net \           # 指定 Docker 网络
-  -d \
-  seataio/seata-server:1.5.2
+-p 8099:8099 \
+-p 7099:7099 \
+-e SEATA_IP=192.168.1595.131 \
+-v ./seata:/seata-server/resources \
+--privileged=true \
+--network hm-net \
+-d \
+seataio/seata-server:1.5.2
+```
+
+```
+docker start seata  #启动
 ```
 
 #### 参数说明
@@ -2145,7 +2153,7 @@ docker logs -f seata
 
 ### 5️⃣ 访问控制台
 
-- 浏览器访问：http://192.168.195.131:8099/
+- 浏览器访问：http://192.168.195.131:7099/
 - 默认账号密码：`admin / admin`
 
 ------
