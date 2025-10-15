@@ -107,11 +107,8 @@ export default {
 }
 ```
 
-
-
 跳转到`idea`
-![](https://www.fzpersonalweb.xyz/api/uploads/6a5800a5-a581-467a-82fa-9dafc5c3d608_image-20241020151206576.png)
-
+<img width="729" height="558" alt="image" src="https://github.com/user-attachments/assets/50c0b1db-b82c-4f74-814a-c42627f13456" />
 
 **一切准备好后就可以使用Tailwindcss**
 ## ***4.组件库安装***
