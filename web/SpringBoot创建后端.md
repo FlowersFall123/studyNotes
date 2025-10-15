@@ -17,6 +17,8 @@
   <url>https://maven.aliyun.com/repository/public</url>
 </mirror>
 ```
+<img width="1538" height="832" alt="image" src="https://github.com/user-attachments/assets/41029836-8b33-4805-b223-392fc213c07c" />
+
 ```<localRepository>D:\Environment\Maven\rely_on</localRepository>```
 之后保存
 ## 3.使用Maven
