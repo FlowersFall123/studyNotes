@@ -17,6 +17,7 @@
   <url>https://maven.aliyun.com/repository/public</url>
 </mirror>
 ```
+```<localRepository>D:\Environment\Maven\rely_on</localRepository>```
 之后保存
 ## 3.使用Maven
 
