@@ -36,9 +36,7 @@ pnpm create vite
 执行上述步骤后，命令行中会示意交互安装，如图所示。
 
 **操作方式**：命名选项可直接键入字符，回车确认。选择式选项通过上下左右方向键选择，回车确认。
-![](https://www.fzpersonalweb.xyz/api/uploads/f9833344-1545-4c88-a674-55b12a0b32f8_image-20240930175003074.png)
-
-
+<img width="683" height="311" alt="image" src="https://github.com/user-attachments/assets/e2635a63-8aeb-401f-bd40-7f885b0c0b5c" />
 
 ### (2).自动化下载依赖，起洞项目
 
@@ -109,11 +107,8 @@ export default {
 }
 ```
 
-
-
 跳转到`idea`
-![](https://www.fzpersonalweb.xyz/api/uploads/6a5800a5-a581-467a-82fa-9dafc5c3d608_image-20241020151206576.png)
-
+<img width="729" height="558" alt="image" src="https://github.com/user-attachments/assets/50c0b1db-b82c-4f74-814a-c42627f13456" />
 
 **一切准备好后就可以使用Tailwindcss**
 ## ***4.组件库安装***
