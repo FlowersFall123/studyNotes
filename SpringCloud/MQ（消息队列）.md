@@ -333,7 +333,8 @@ public void listenFanoutQueue2(String message) {
 - 交换机：`fz.direct`
 - 设置 Routing Key（一个队列可以绑定多个 key）
 
-![direct模式](F:\SpringCloud\图片\direct模式.png)
+<img width="1801" height="674" alt="image" src="https://github.com/user-attachments/assets/d8c6b258-3917-4c87-8769-0deea7ad9665" />
+
 
 ------
 
@@ -371,14 +372,14 @@ public void listenDirectQueue2(String message) {
 **Topic 模式**支持通配符匹配，非常灵活。
  常用于“按主题分发”的复杂路由场景。
 
-![topic](F:\SpringCloud\图片\topic.png)
+<img width="1402" height="741" alt="image" src="https://github.com/user-attachments/assets/8b148b94-5e4d-44a5-b6c8-d0bdafc81e08" />
+
 
 | 通配符 | 含义               |
 | ------ | ------------------ |
 | `*`    | 匹配一个单词       |
 | `#`    | 匹配零个或多个单词 |
-
-![topic绑定](F:\SpringCloud\图片\topic绑定.png)
+<img width="1175" height="534" alt="image" src="https://github.com/user-attachments/assets/7c926f8a-a91c-4779-a52b-df3cf01993da" />
 
 ------
 
