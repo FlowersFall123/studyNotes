@@ -65,8 +65,8 @@ http://192.168.195.131:15672/
 用户名：admin
 密码：admin
 ```
+<img width="1875" height="949" alt="image" src="https://github.com/user-attachments/assets/317876eb-b422-483c-86e4-0081ddb6036e" />
 
-![mq界面](F:\SpringCloud\图片\mq界面.png)
 
 ------
 
@@ -81,8 +81,8 @@ http://192.168.195.131:15672/
 3. 填写队列名称（如 `testQueue`），点击 **Add queue**
 
 > ✅ 队列用于存放消息，是消息传递的中间存储区域。
+<img width="1868" height="909" alt="image" src="https://github.com/user-attachments/assets/2c8f9253-56ed-440f-ab96-cb8fa362996b" />
 
-![创建queue](F:\SpringCloud\图片\创建queue.png)
 ------
 
 ### 绑定队列（Binding）
@@ -92,8 +92,8 @@ http://192.168.195.131:15672/
 3. 设置 Routing Key，完成绑定
 
 > ✅ 绑定决定了消息路由的路径。
+<img width="1837" height="870" alt="image" src="https://github.com/user-attachments/assets/33d76f38-33f4-4b92-9dd8-32a805c05e64" />
 
-![绑定队列](F:\SpringCloud\图片\绑定队列.png)
 
 
 ------
@@ -104,10 +104,10 @@ http://192.168.195.131:15672/
 2. 点击 **Publish message**
 3. 填写 routing key 与消息内容
 4. 点击 **Publish message** 发送
+<img width="1838" height="860" alt="image" src="https://github.com/user-attachments/assets/eab553a0-c05a-4429-8126-aaff4b46ed37" />
 
-![发送之后1](F:\SpringCloud\图片\发送之后1.png)
+<img width="1824" height="865" alt="image" src="https://github.com/user-attachments/assets/9fa6a9b8-9545-4f4e-8115-9dddf590d656" />
 
-![发送之后2](F:\SpringCloud\图片\发送之后2.png)
 
 ------
 
@@ -117,8 +117,8 @@ http://192.168.195.131:15672/
 2. 选择队列
 3. 点击 **Get messages**
 4. 查看消息内容、状态、是否被消费等信息
+<img width="1852" height="890" alt="image" src="https://github.com/user-attachments/assets/57426efe-506f-42d7-a232-507e7505e2e8" />
 
-![查看消息](F:\SpringCloud\图片\查看消息.png)
 
 
 ------
@@ -128,8 +128,8 @@ http://192.168.195.131:15672/
 1. 打开 **Admin → Users**
 2. 点击 **Add user**
 3. 设置用户名、密码、角色（如 `administrator`）
+<img width="1829" height="879" alt="image" src="https://github.com/user-attachments/assets/abbb4b3a-27cd-4479-9805-fc177e8c9ea2" />
 
-![添加用户](F:\SpringCloud\图片\添加用户.png)
 
 
 ------
@@ -141,8 +141,8 @@ http://192.168.195.131:15672/
 3. 输入名称（如 `/myvhost`），点击 **Add**
 
 > ✅ 虚拟主机相当于逻辑隔离空间，不同业务模块可使用不同 vhost 实现数据隔离。
+<img width="1841" height="873" alt="image" src="https://github.com/user-attachments/assets/3bb297d9-5584-4b8d-9e0c-0ee3427616a2" />
 
-![添加虚拟主机](F:\SpringCloud\图片\添加虚拟主机.png)
 
 
 ------
@@ -154,8 +154,8 @@ http://192.168.195.131:15672/
 - 不同项目/模块使用不同的虚拟主机
 - 用户仅能访问被授权的虚拟主机资源（队列、交换机等）
 - 提高安全性与管理灵活性
+<img width="1832" height="872" alt="image" src="https://github.com/user-attachments/assets/ff89170c-1c22-4002-9129-18e74aebb289" />
 
-![数据隔离](F:\SpringCloud\图片\数据隔离.png)
 
 ##  RabbitMQ 在 Java 客户端中的实践
 
