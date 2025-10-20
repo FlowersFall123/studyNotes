@@ -465,3 +465,83 @@ public void listenDirectQueue1(String message) {
     System.out.println("direct.queue1 收到消息: " + message);
 }
 ```
+
+###  九、消息转换器（Message Converter）
+
+![消息转换器1](F:\SpringCloud\图片\消息转换器1.png)
+
+####  一、添加依赖
+
+在 `pom.xml` 中引入 **Jackson 的 XML 数据格式化支持**：
+
+```
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-xml</artifactId>
+</dependency>
+```
+
+------
+
+#### 二、配置消息转换器
+
+在 **Spring Boot 启动类**（或任意配置类）中配置消息转换器为 JSON 格式：
+
+> ⚠️ 注意：**不要导包错误！**
+>  需使用以下两个包👇
+
+```
+import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
+import org.springframework.amqp.support.converter.MessageConverter;
+```
+
+配置 Bean：
+
+```
+@Bean
+public MessageConverter messageConverter() {
+    return new Jackson2JsonMessageConverter();
+}
+```
+
+📖 **作用**：
+ 让 RabbitMQ 支持 **对象消息的自动序列化和反序列化**（即在发送时将 Java 对象转换为 JSON，在接收时自动还原为 Map 或实体类）。
+
+------
+
+#### 三、发送消息（对象）
+
+```
+@Test
+public void TestObjectQueue() {
+    Map<String, Object> map = new HashMap<>();
+    map.put("name", "fz");
+    map.put("age", 18);
+
+    // 发送对象消息到队列
+    rabbitTemplate.convertAndSend("object.queue", map);
+}
+```
+
+🧠 **说明：**
+
+- `convertAndSend()` 会自动将对象序列化为 JSON 格式后发送；
+- 无需手动序列化，简单高效。
+
+![消息转换器2](F:\SpringCloud\图片\消息转换器2.png)
+
+------
+
+#### 四、接收消息（对象）
+
+```
+@RabbitListener(queues = "object.queue")
+public void listenObjectQueue(Map<String, Object> message) throws InterruptedException {
+    System.out.println("object.queue 的消息: " + message);
+}
+```
+
+🧠 **说明：**
+
+- Spring AMQP 会自动将接收到的 JSON 消息反序列化为 `Map`；
+- 如果你有自定义实体类，也可以直接接收为对应对象。
