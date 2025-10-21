@@ -467,8 +467,8 @@ public void listenDirectQueue1(String message) {
 ```
 
 ###  九、消息转换器（Message Converter）
+<img width="1771" height="873" alt="消息转换器1" src="https://github.com/user-attachments/assets/d21683e2-d029-4e22-a7c3-da8dddb075db" />
 
-![消息转换器1](F:\SpringCloud\图片\消息转换器1.png)
 
 ####  一、添加依赖
 
@@ -528,7 +528,8 @@ public void TestObjectQueue() {
 - `convertAndSend()` 会自动将对象序列化为 JSON 格式后发送；
 - 无需手动序列化，简单高效。
 
-![消息转换器2](F:\SpringCloud\图片\消息转换器2.png)
+<img width="1780" height="870" alt="消息转换器2" src="https://github.com/user-attachments/assets/b0171368-23e0-45dd-8dd7-b6bedbe9171e" />
+
 
 ------
 
