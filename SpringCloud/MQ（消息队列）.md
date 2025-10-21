@@ -609,6 +609,7 @@ spring:
 生产者 → 交换机（ConfirmCallback）
        → 队列（ReturnCallback）
 ```
+<img width="1403" height="751" alt="发送者确认" src="https://github.com/user-attachments/assets/cb67c4b5-5489-4dc3-9773-34baa133290c" />
 
 ------
 
