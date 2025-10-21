@@ -157,11 +157,11 @@ http://192.168.195.131:15672/
 <img width="1832" height="872" alt="image" src="https://github.com/user-attachments/assets/ff89170c-1c22-4002-9129-18e74aebb289" />
 
 
-##  RabbitMQ 在 Java 客户端中的实践
+##  四、RabbitMQ 在 Java 客户端中的实践
 
 ------
 
-### 一、引入依赖
+### 1、引入依赖
 
 在 Spring Boot 中使用 RabbitMQ，需要添加 AMQP 依赖：
 
@@ -175,7 +175,7 @@ http://192.168.195.131:15672/
 
 ------
 
-### 二、基本配置（`application.yml`）
+### 2、基本配置（`application.yml`）
 
 ```
 spring:
@@ -189,7 +189,7 @@ spring:
 
 ------
 
-### 三、简单队列（Simple Queue）
+### 3、简单队列（Simple Queue）
 
 最基本的模型：**一个生产者，一个消费者，一个队列。**
 
@@ -221,7 +221,7 @@ public void listenSimpleQueue(String message) {
 
 ------
 
-### 四、工作队列（Work Queues）
+### 4、工作队列（Work Queues）
 
 **Work Queues** 模式：
  多个消费者监听同一个队列，**每条消息只会被一个消费者处理。**
@@ -277,7 +277,7 @@ spring:
 
 ------
 
-### 五、发布订阅模式（Fanout Exchange）
+### 5、发布订阅模式（Fanout Exchange）
 
 **Fanout 交换机** 会将消息**广播**到所有绑定的队列。
 
@@ -324,7 +324,7 @@ public void listenFanoutQueue2(String message) {
 
 ------
 
-### 六、路由模式（Direct Exchange）
+### 6、路由模式（Direct Exchange）
 
 **Direct 模式**会根据 `Routing Key` 精确匹配队列。
 
@@ -374,7 +374,7 @@ public void listenDirectQueue2(String message) {
 
 ------
 
-### 七、主题模式（Topic Exchange）
+### 7、主题模式（Topic Exchange）
 
 **Topic 模式**支持通配符匹配，非常灵活。
  常用于“按主题分发”的复杂路由场景。
@@ -419,7 +419,7 @@ public void listenTopicQueue2(String message) {
 
 ------
 
-### 八、Java 端创建队列、交换机与绑定关系
+### 8、Java 端创建队列、交换机与绑定关系
 
 Spring AMQP 提供两种方式来声明这些组件：
 
@@ -466,11 +466,11 @@ public void listenDirectQueue1(String message) {
 }
 ```
 
-###  九、消息转换器（Message Converter）
+###  9、消息转换器（Message Converter）
 <img width="1771" height="873" alt="消息转换器1" src="https://github.com/user-attachments/assets/d21683e2-d029-4e22-a7c3-da8dddb075db" />
 
 
-####  一、添加依赖
+####  1、添加依赖
 
 在 `pom.xml` 中引入 **Jackson 的 XML 数据格式化支持**：
 
@@ -483,7 +483,7 @@ public void listenDirectQueue1(String message) {
 
 ------
 
-#### 二、配置消息转换器
+#### 2、配置消息转换器
 
 在 **Spring Boot 启动类**（或任意配置类）中配置消息转换器为 JSON 格式：
 
@@ -509,7 +509,7 @@ public MessageConverter messageConverter() {
 
 ------
 
-#### 三、发送消息（对象）
+#### 3、发送消息（对象）
 
 ```
 @Test
@@ -533,7 +533,7 @@ public void TestObjectQueue() {
 
 ------
 
-#### 四、接收消息（对象）
+#### 4、接收消息（对象）
 
 ```
 @RabbitListener(queues = "object.queue")
@@ -709,3 +709,89 @@ public class RabbitReturnConfig {
 >
 > - 每个 `RabbitTemplate` **只能绑定一个 ReturnCallback**。
 > - 若未设置 `mandatory: true`，路由失败的消息会被直接丢弃，不会触发回调！
+
+## 三、RabbitMQ 消息持久化
+
+### 1、持久化机制概述
+
+- **RabbitMQ 的消息默认是持久化的（前提是队列持久化 + 消息持久化）**。
+- **持久化数据会写入磁盘**，即使 RabbitMQ 重启后也能恢复。
+- **临时消息（非持久化消息）只存储在内存中**，不会写入磁盘。
+
+------
+
+### 2、消息阻塞与持久化的关系
+
+| 消息类型   | 是否写入磁盘 | 是否占用内存       | 是否可能造成阻塞       |
+| ---------- | ------------ | ------------------ | ---------------------- |
+| 持久化消息 | ✅ 是         | ❌ 否（主要在磁盘） | ❌ 不会阻塞             |
+| 临时消息   | ❌ 否         | ✅ 是（存内存）     | ⚠️ 容易阻塞（内存满时） |
+
+> 💡 **阻塞的原因**：非持久化消息堆积在内存中，若消费者消费速度慢，就可能触发内存水位限流机制（内存占用过高）。
+
+------
+
+### 3、Lazy Queue（惰性队列）
+
+- **Lazy Queue**：消息**默认直接存储在磁盘上**，不进入内存。
+- 仅在消息即将被消费时，才会从磁盘**读取到内存**。
+- 可极大减少内存压力，适合**高堆积场景**（如日志、IoT、监控数据等）。
+
+------
+
+### 4、RabbitMQ 3.12 之后的变化
+
+- **RabbitMQ 3.12+ 默认队列模式已经是 Lazy Queue 模式**。
+
+  > 即使未显式设置，队列中的消息也**默认写入磁盘**，不再占用内存。
+
+
+
+## **四、消费者确认机制（Consumer Acknowledgement）**
+
+> 消费者从队列中取出消息后，需要通过回执（acknowledgement）告诉 RabbitMQ 消息的处理结果。
+
+------
+
+### 1、回执类型
+
+| 回执类型   | 含义                   | RabbitMQ行为                    |
+| ---------- | ---------------------- | ------------------------------- |
+| **ack**    | 消息成功处理           | RabbitMQ 将消息从队列中**删除** |
+| **nack**   | 消息处理失败（可重试） | RabbitMQ **重新投递**该消息     |
+| **reject** | 消息处理失败并拒绝     | RabbitMQ **删除消息**，不会重试 |
+
+------
+
+### 2、ACK 处理模式（Acknowledge Mode）
+
+| 模式       | 描述                                                   | 特点                                           |
+| ---------- | ------------------------------------------------------ | ---------------------------------------------- |
+| **none**   | 不做确认，消息一投递即删除                             | 不安全，容易造成消息丢失，不建议使用           |
+| **manual** | 手动确认，业务代码中显式调用 `ack` / `nack` / `reject` | 灵活，可精确控制消息确认时机，但业务入侵性较强 |
+| **auto**   | 自动确认，Spring AMQP 利用 AOP 自动判断                | 安全且易用，推荐使用                           |
+
+------
+
+### 3、`auto` 模式的自动回执逻辑
+
+Spring AMQP 会对消费者方法进行环绕增强，根据执行结果自动返回不同回执：
+
+| 情况                     | 自动返回结果 | 行为说明                   |
+| ------------------------ | ------------ | -------------------------- |
+| 业务逻辑执行成功         | **ack**      | 消息正常处理，删除消息     |
+| 业务异常（可重试性错误） | **nack**     | RabbitMQ 会重新投递消息    |
+| 消息格式或校验异常       | **reject**   | 消息被拒绝并删除，不再重试 |
+
+------
+
+### 4、配置示例
+
+```
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        acknowledge-mode: auto  # 自动确认模式
+```
+
