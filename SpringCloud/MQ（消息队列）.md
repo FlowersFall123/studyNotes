@@ -1,4 +1,4 @@
-# MQ（消息队列）
+# MQ-基础
 
 ## 一、RabbitMQ 简介
 
@@ -545,3 +545,166 @@ public void listenObjectQueue(Map<String, Object> message) throws InterruptedExc
 
 - Spring AMQP 会自动将接收到的 JSON 消息反序列化为 `Map`；
 - 如果你有自定义实体类，也可以直接接收为对应对象。
+
+
+
+#  MQ 高级机制
+
+## 一、重连机制（Retry 机制）
+
+> 当由于**网络波动**或**MQ不可用**导致连接失败时，可开启**自动重试机制**。
+
+### 配置示例
+
+```
+spring:
+  rabbitmq:
+    connection-timeout: 1s # 设置连接MQ的超时时间
+    template:
+      retry:
+        enabled: true        # 开启超时重试机制
+        initial-interval: 1000ms # 第一次失败后的等待时间
+        multiplier: 1        # 下次等待时长倍数（等待时间 = 上次等待时间 * multiplier）
+        max-attempts: 3      # 最大重试次数
+```
+
+### 💡 说明
+
+- **enabled**：是否启用重试。
+- **initial-interval**：第一次失败后等待多久再重试。
+- **multiplier**：倍数因子，每次重试的等待间隔递增。
+- **max-attempts**：最多重试几次。
+
+### ⚠️ 注意
+
+- 该机制是**阻塞式**的，会影响性能。
+- 一般用于 **测试环境** 或 **对可靠性要求极高** 的场景。
+- 在生产环境通常通过 **异步重试** 或 **补偿机制（定时任务 + 消息表）** 实现更优雅的重发。
+
+------
+
+## 二、发送者确认机制（Publisher Confirm）
+
+### 1、机制简介
+
+> **发送者确认机制（Publisher Confirm）** 是 RabbitMQ 提供的一种消息可靠投递机制，
+>  用于确保生产者发送的消息能可靠地从**生产者 → 交换机（Exchange） → 队列（Queue）**，
+>  并可在任一环节失败时得到回调通知，防止消息丢失。
+
+------
+
+### 2、机制组成
+
+发送者确认机制包含 **两大回调机制**：
+
+| 回调类型            | 触发时机                                | 作用                                 |
+| ------------------- | --------------------------------------- | ------------------------------------ |
+| **ConfirmCallback** | 消息是否成功到达 **交换机（Exchange）** | 确认消息已被 MQ 接收                 |
+| **ReturnCallback**  | 消息是否被成功路由到 **队列（Queue）**  | 检测消息是否投递失败（如路由键错误） |
+
+这两部分协同工作，构成完整的消息投递确认链路：
+
+```
+生产者 → 交换机（ConfirmCallback）
+       → 队列（ReturnCallback）
+```
+
+------
+
+### 3、配置示例
+
+```
+spring:
+  rabbitmq:
+    publisher-confirm-type: correlated  # 开启 Confirm 机制（异步回调）
+    publisher-returns: true             # 开启 Return 机制（路由失败回调）
+    template:
+      mandatory: true                   # 必须设置为 true，否则 ReturnCallback 不会触发
+```
+
+------
+
+### 4、ConfirmCallback — 交换机确认机制
+
+> 用于确认消息是否成功到达交换机（Exchange）。
+
+#### 说明
+
+- `publisher-confirm-type` 参数控制 confirm 模式。
+- 有三种取值：
+
+| 模式         | 说明                         |
+| ------------ | ---------------------------- |
+| `none`       | 关闭 confirm 机制            |
+| `simple`     | 同步阻塞等待确认（性能低）   |
+| `correlated` | **异步回调**接收确认（推荐） |
+
+#### 使用示例
+
+```
+@Test
+public void testConfirmCallback() throws InterruptedException {
+    // 1. 创建唯一 ID
+    CorrelationData correlationData = new CorrelationData(UUID.randomUUID().toString());
+
+    // 2. 添加确认回调
+    correlationData.getFuture().addCallback(new ListenableFutureCallback<CorrelationData.Confirm>() {
+        @Override
+        public void onSuccess(CorrelationData.Confirm result) {
+            if (result.isAck()) {
+                log.debug("✅ 消息成功到达交换机！");
+            } else {
+                log.error("❌ 消息未能到达交换机！");
+            }
+        }
+
+        @Override
+        public void onFailure(Throwable ex) {
+            log.error("❌ 消息发送异常: {}", ex.getMessage());
+        }
+    });
+
+    // 3. 发送消息
+    rabbitTemplate.convertAndSend("fz.direct", "red", "Hello, MQ!", correlationData);
+
+    // 4. 避免测试提前结束
+    Thread.sleep(2000);
+}
+```
+
+------
+
+### 5、ReturnCallback — 路由确认机制
+
+> 用于确认消息是否成功被交换机**路由到队列**。
+>  若找不到对应队列（如 routingKey 错误），则触发该回调。
+
+####  配置与使用
+
+```
+@Slf4j
+@Configuration
+@RequiredArgsConstructor
+public class RabbitReturnConfig {
+
+    private final RabbitTemplate rabbitTemplate;
+
+    @PostConstruct
+    public void init() {
+        // 配置 ReturnCallback
+        rabbitTemplate.setReturnsCallback(returned -> {
+            log.error("❌ 消息未能路由到队列！");
+            log.debug("exchange: {}", returned.getExchange());
+            log.debug("routingKey: {}", returned.getRoutingKey());
+            log.debug("replyCode: {}", returned.getReplyCode());
+            log.debug("replyText: {}", returned.getReplyText());
+            log.debug("message: {}", returned.getMessage());
+        });
+    }
+}
+```
+
+> ⚠️ 注意：
+>
+> - 每个 `RabbitTemplate` **只能绑定一个 ReturnCallback**。
+> - 若未设置 `mandatory: true`，路由失败的消息会被直接丢弃，不会触发回调！
