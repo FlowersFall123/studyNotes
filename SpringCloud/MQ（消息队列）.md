@@ -966,3 +966,155 @@ public void listenObjectQueue(Message message) {
     System.out.println("object.queue的消息: " + message);
 }
 ```
+
+# RabbitMQ 消息延迟机制
+
+------
+
+## 一、死信交换机（DLX）实现延迟消息
+
+### 原理说明
+
+当消息在队列中超时未被消费、被拒绝（`reject` / `nack` 且不重新入队）、或队列达到最大长度时，会被转发到 **死信交换机（DLX）**。
+
+通过这种机制，可以模拟“消息延迟消费”的效果。
+
+------
+
+### 核心配置
+
+#### 生产者发送消息并设置过期时间（TTL）
+
+```
+@Test
+public void TestDlx() {
+    rabbitTemplate.convertAndSend("normal.direct", "dlx", "hello, spring amqp!", new MessagePostProcessor() {
+        @Override
+        public Message postProcessMessage(Message message) throws AmqpException {
+            // 设置消息过期时间（单位：毫秒）
+            message.getMessageProperties().setExpiration("10000");
+            return message;
+        }
+    });
+}
+```
+
+------
+
+#### 普通交换机与死信交换机配置
+
+```
+@Configuration
+public class NormalConfiguration {
+
+    // 普通交换机
+    @Bean
+    public DirectExchange normalExchange() {
+        return ExchangeBuilder.directExchange("normal.direct").build();
+    }
+
+    // 普通队列，绑定死信交换机
+    @Bean
+    public Queue normalQueue() {
+        return QueueBuilder
+                .durable("normal.queue")
+                .deadLetterExchange("dlx.direct") // 绑定死信交换机
+                .build();
+    }
+
+    // 普通队列与普通交换机绑定
+    @Bean
+    public Binding directBinding(Queue normalQueue, DirectExchange normalExchange) {
+        return BindingBuilder.bind(normalQueue)
+                .to(normalExchange)
+                .with("dlx"); // routingKey 要与死信交换机一致
+    }
+}
+```
+
+------
+
+#### 死信交换机监听消费者
+
+```
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue(name = "dlx.queue"),
+        exchange = @Exchange(name = "dlx.direct", type = ExchangeTypes.DIRECT),
+        key = {"dlx"}
+))
+public void listenDlxQueue(String message) {
+    System.out.println("接收到 dlx.queue 的死信消息：" + message);
+}
+```
+
+✅ **效果**：
+ 消息发送到普通队列 → 超过 10 秒未消费 → 转发到死信交换机 → 被消费者监听到。
+
+------
+
+## 二、延迟插件实现消息延迟
+
+> 使用官方插件 **rabbitmq-delayed-message-exchange** 实现更灵活的延迟消息。
+
+------
+
+### 插件安装步骤（Docker 环境）
+
+1️⃣ 下载插件
+ 👉 [Releases · rabbitmq/rabbitmq-delayed-message-exchange](https://github.com/rabbitmq/rabbitmq-delayed-message-exchange/releases)
+
+2️⃣ 查找插件卷路径
+
+```
+docker volume inspect mq-plugins
+```
+
+3️⃣ 进入路径并复制插件文件进去
+
+```
+cd /var/lib/docker/volumes/mq-plugins/_data
+```
+
+4️⃣ 启用插件
+
+```
+docker exec -it mq rabbitmq-plugins enable rabbitmq_delayed_message_exchange
+```
+
+------
+
+### 声明延迟交换机（delayed = true）
+
+```
+@RabbitListener(bindings = @QueueBinding(
+        value = @Queue(name = "delay.queue", durable = "true"),
+        exchange = @Exchange(name = "delay.direct", delayed = "true"), // 延迟交换机
+        key = "delay"
+))
+public void listenDelayMessage(String msg) {
+    log.info("接收到 delay.queue 的延迟消息：{}", msg);
+}
+```
+
+------
+
+### 发送延迟消息
+
+```
+@Test
+void testPublisherDelayMessage() {
+    String message = "hello, delayed message";
+
+    rabbitTemplate.convertAndSend("delay.direct", "delay", message, new MessagePostProcessor() {
+        @Override
+        public Message postProcessMessage(Message message) throws AmqpException {
+            // 设置延迟时间（单位：毫秒）
+            message.getMessageProperties().setDelay(5000);
+            return message;
+        }
+    });
+}
+```
+
+✅ **效果**：
+ 发送后 5 秒消息才会被投递到 `delay.queue` 并被消费。
