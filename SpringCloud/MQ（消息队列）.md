@@ -733,6 +733,7 @@ public class RabbitReturnConfig {
 ------
 
 ### 3、Lazy Queue（惰性队列）
+<img width="1368" height="508" alt="lazyQueue" src="https://github.com/user-attachments/assets/6c5bfc7a-43ba-4103-8b4a-363fa807880d" />
 
 - **Lazy Queue**：消息**默认直接存储在磁盘上**，不进入内存。
 - 仅在消息即将被消费时，才会从磁盘**读取到内存**。
@@ -749,6 +750,7 @@ public class RabbitReturnConfig {
 
 
 ## **四、消费者确认机制（Consumer Acknowledgement）**
+<img width="1386" height="703" alt="消费者确认" src="https://github.com/user-attachments/assets/7e73a8e9-40c5-4a75-bcf8-0964c85f4bb1" />
 
 > 消费者从队列中取出消息后，需要通过回执（acknowledgement）告诉 RabbitMQ 消息的处理结果。
 
