@@ -918,3 +918,51 @@ public class ErrorMessageConfiguration {
 | `RejectAndDontRequeueRecoverer`    | 丢弃消息         | 非关键消息               |
 | `ImmediateRequeueMessageRecoverer` | 重新入队         | 临时性错误（如网络异常） |
 | `RepublishMessageRecoverer`        | 投递到错误交换机 | 关键业务、日志追踪       |
+
+## 六、幂等性（Idempotency）
+
+### 概念说明
+
+幂等性：
+
+> **无论同一条消息被消费多少次，最终结果都应一致**。
+
+RabbitMQ 在网络抖动、消费者宕机或消息重试等情况下，可能导致**同一消息被多次消费**。
+ 因此需要为消息设置唯一 ID，用于判定消息是否已被处理。
+
+------
+
+### 1、在消息转换器中自动生成消息 ID
+
+在配置类中开启 **自动生成 MessageId** 功能：
+
+```
+@Bean
+public MessageConverter messageConverter(){
+    Jackson2JsonMessageConverter jsonMessageConverter = new Jackson2JsonMessageConverter();
+    jsonMessageConverter.setCreateMessageIds(true); // 自动为每条消息生成唯一 ID
+    return jsonMessageConverter;
+}
+```
+
+#### ✨ 说明：
+
+- `Jackson2JsonMessageConverter` 用于将对象自动转换为 JSON 格式消息；
+- `setCreateMessageIds(true)`：发送消息时，系统自动为每条消息分配唯一 `MessageId`；
+- 消费者可根据 `MessageId` 判断消息是否重复处理。
+
+------
+
+###  2、消费者端接收消息并打印 MessageId
+
+消费者方法需接收 `Message` 类型（而不是直接接收对象），
+ 这样才能读取消息属性（如 ID、Header、Body）。
+
+```
+@RabbitListener(queues = "object.queue")
+public void listenObjectQueue(Message message) {
+    log.info("消息的ID为：【{}】", message.getMessageProperties().getMessageId());
+    log.info("消息为：【{}】", new String(message.getBody()));
+    System.out.println("object.queue的消息: " + message);
+}
+```
