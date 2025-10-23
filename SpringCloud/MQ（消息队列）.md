@@ -551,7 +551,7 @@ public void listenObjectQueue(Map<String, Object> message) throws InterruptedExc
 
 #  MQ 高级机制
 
-## 一、重连机制（Retry 机制）
+## 一、发送者重连机制（Retry 机制）
 
 > 当由于**网络波动**或**MQ不可用**导致连接失败时，可开启**自动重试机制**。
 
@@ -796,3 +796,123 @@ spring:
         acknowledge-mode: auto  # 自动确认模式
 ```
 
+## 五、消费者重试机制
+
+### 作用
+
+防止消费者**处理消息失败时无限重试**，导致**队列消息频繁重新投递**（可能每秒上千次，造成性能压力）。
+ 开启“本地重试机制”后，失败重试仅发生在**消费者本地**，不会重复投递到队列中。
+
+> ⚠️ 注意：默认情况下，超过最大重试次数后，消息会**直接丢弃**。
+
+------
+
+###  基本配置
+
+```
+spring:
+  rabbitmq:
+    listener:
+      simple:
+        retry:
+          enabled: true           # 开启消费者失败重试
+          initial-interval: 1000ms # 初始失败等待时间：1秒
+          multiplier: 1           # 每次重试等待时间倍率
+          max-attempts: 3         # 最大重试次数
+          stateless: true         # 是否无状态（true：无事务；false：有事务）
+```
+
+#### 说明：
+
+- **enabled**：开启重试机制。
+- **initial-interval**：第一次重试的等待时长。
+- **multiplier**：每次重试等待的倍数（例如 1.5 表示递增）。
+- **max-attempts**：最大重试次数（超过即触发`MessageRecoverer`策略）。
+- **stateless**：若消费者方法涉及事务，需设为`false`。
+
+------
+
+### MessageRecoverer（消息恢复策略）
+
+当**重试次数耗尽**后，Spring AMQP 会调用 `MessageRecoverer` 接口的实现类来处理失败的消息。
+
+三种常用实现：
+
+| 实现类                               | 行为说明                                            |
+| ------------------------------------ | --------------------------------------------------- |
+| **RejectAndDontRequeueRecoverer**    | 重试耗尽后，直接 `reject`，**丢弃消息**（默认策略） |
+| **ImmediateRequeueMessageRecoverer** | 重试耗尽后，返回 `nack`，**消息重新入队**           |
+| **RepublishMessageRecoverer**        | 重试耗尽后，**将失败消息投递到指定交换机/队列**     |
+
+------
+
+### 示例 1：ImmediateRequeueMessageRecoverer
+
+> 重试失败后让消息**重新回到队列**，由其他消费者或相同消费者再次处理。
+
+```
+@Configuration
+public class RabbitRetryConfig {
+
+    @Bean
+    public MessageRecoverer messageRecoverer() {
+        // 重试耗尽后重新入队
+        return new ImmediateRequeueMessageRecoverer();
+    }
+}
+```
+
+**效果**：
+
+- 消息在本地重试失败后，会重新回到队列中；
+- RabbitMQ 会重新分配该消息（可被相同或其他消费者再次消费）；
+- 适合 **临时异常**（如网络抖动、外部接口超时等）。
+
+------
+
+### 示例 2：RepublishMessageRecoverer
+
+> 重试失败后，将错误消息投递到**错误交换机**（error.direct），供后续人工分析。
+
+```
+@Configuration
+public class ErrorMessageConfiguration {
+
+    @Bean
+    public DirectExchange errorExchange() {
+        return new DirectExchange("error.direct");
+    }
+
+    @Bean
+    public Queue errorQueue() {
+        return new Queue("error.queue");
+    }
+
+    @Bean
+    public Binding errorBinding(Queue errorQueue, DirectExchange errorExchange) {
+        return BindingBuilder.bind(errorQueue).to(errorExchange).with("error");
+    }
+
+    @Bean
+    public MessageRecoverer messageRecoverer(RabbitTemplate rabbitTemplate) {
+        // 将失败消息转发到 error.direct 交换机中
+        return new RepublishMessageRecoverer(rabbitTemplate, "error.direct", "error");
+    }
+}
+```
+
+**效果**：
+
+- 消息重试3次后仍失败，会被发送到 `"error.direct"` → `"error.queue"`；
+- 可在此队列中记录日志、报警或人工介入排查问题。
+- 常用于 **重要业务**，以防止消息丢失。
+
+------
+
+### 对比
+
+| 策略类型                           | 行为             | 使用场景                 |
+| ---------------------------------- | ---------------- | ------------------------ |
+| `RejectAndDontRequeueRecoverer`    | 丢弃消息         | 非关键消息               |
+| `ImmediateRequeueMessageRecoverer` | 重新入队         | 临时性错误（如网络异常） |
+| `RepublishMessageRecoverer`        | 投递到错误交换机 | 关键业务、日志追踪       |
