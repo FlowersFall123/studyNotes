@@ -944,6 +944,7 @@ public MessageConverter messageConverter(){
     return jsonMessageConverter;
 }
 ```
+<img width="1239" height="803" alt="消息ID" src="https://github.com/user-attachments/assets/175d364f-92ca-4b21-853a-2b558123f4ac" />
 
 #### ✨ 说明：
 
@@ -966,3 +967,4 @@ public void listenObjectQueue(Message message) {
     System.out.println("object.queue的消息: " + message);
 }
 ```
+<img width="1082" height="307" alt="查看消息ID" src="https://github.com/user-attachments/assets/8162c326-2b3a-4f8c-90eb-a60a6b1209d7" />
