@@ -967,10 +967,7 @@ public void listenObjectQueue(Message message) {
     System.out.println("object.queue的消息: " + message);
 }
 ```
-<<<<<<< HEAD
-=======
 
->>>>>>> 97763dee94512b2f7727a94890b5e2a820df78b9
 # RabbitMQ 消息延迟机制
 
 ------
