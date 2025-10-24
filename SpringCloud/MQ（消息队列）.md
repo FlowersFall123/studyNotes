@@ -968,7 +968,9 @@ public void listenObjectQueue(Message message) {
 }
 ```
 <<<<<<< HEAD
+=======
 
+>>>>>>> 97763dee94512b2f7727a94890b5e2a820df78b9
 # RabbitMQ 消息延迟机制
 
 ------
@@ -980,6 +982,7 @@ public void listenObjectQueue(Message message) {
 当消息在队列中超时未被消费、被拒绝（`reject` / `nack` 且不重新入队）、或队列达到最大长度时，会被转发到 **死信交换机（DLX）**。
 
 通过这种机制，可以模拟“消息延迟消费”的效果。
+<img width="1500" height="712" alt="死信交换机" src="https://github.com/user-attachments/assets/5abfb003-3b15-4cd2-bae1-f0b4d37e2e0e" />
 
 ------
 
@@ -1082,6 +1085,7 @@ cd /var/lib/docker/volumes/mq-plugins/_data
 ```
 docker exec -it mq rabbitmq-plugins enable rabbitmq_delayed_message_exchange
 ```
+<img width="1846" height="934" alt="安装插件" src="https://github.com/user-attachments/assets/9390f1b0-07bb-4e27-9e89-b9a40770180c" />
 
 ------
 
