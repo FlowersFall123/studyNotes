@@ -175,9 +175,8 @@ POST /_analyze
    ```
    docker restart es
    ```
-<<<<<<< HEAD
+<img width="1827" height="865" alt="扩展词典3" src="https://github.com/user-attachments/assets/81889a68-b96b-40cc-9c93-b3fa127fd1f7" />
 
-![扩展词典3](F:\SpringCloud\图片\扩展词典3.png)
 
 # Elasticsearch 索引库操作
 
@@ -254,6 +253,8 @@ PUT /fz
 - `email`：不参与索引。
 - `name`：对象类型，包含两个子字段。
 
+<img width="1848" height="897" alt="创建索引库" src="https://github.com/user-attachments/assets/034dbc02-b3a0-4b97-aa58-133ed62e8d43" />
+
 ------
 
 ### 2. 查询索引库
@@ -305,6 +306,7 @@ POST /fz/_doc/1
   }
 }
 ```
+<img width="1848" height="946" alt="文档创建索引库" src="https://github.com/user-attachments/assets/fdb95398-5a7a-449f-83a3-f788eecaedce" />
 
 ------
 
@@ -362,6 +364,3 @@ POST /fz/_update/1
 - 使用 `_update` + `doc` 关键字。
 - 仅更新指定字段，其余字段保持不变。
 
-=======
-<img width="1827" height="865" alt="扩展词典3" src="https://github.com/user-attachments/assets/cb40c094-2682-4369-adaf-dcf410aa15be" />
->>>>>>> a7bc6d1727ee8c4b5395b12bb9716008f66b65fb
