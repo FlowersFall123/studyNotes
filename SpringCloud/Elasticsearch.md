@@ -1,4 +1,4 @@
-# Elasticsearch 学习笔记
+# ES基础
 
 ## 一、简介
 
@@ -176,3 +176,187 @@ POST /_analyze
    ```
 
 ![扩展词典3](F:\SpringCloud\图片\扩展词典3.png)
+
+# Elasticsearch 索引库操作
+
+------
+
+## 一、Mapping 映射
+
+**定义：**
+ `Mapping` 是对索引库中字段类型和行为的约束（类似数据库中的表结构定义）。
+
+### 常见属性
+
+| 属性         | 说明                          | 示例                     |
+| ------------ | ----------------------------- | ------------------------ |
+| `type`       | 字段数据类型                  | `"type": "text"`         |
+| `index`      | 是否创建索引（默认为 `true`） | `"index": false`         |
+| `analyzer`   | 指定使用的分词器              | `"analyzer": "ik_smart"` |
+| `properties` | 子字段定义（对象类型使用）    | `"properties": {...}`    |
+
+### 常见字段类型
+
+| 类型                                  | 说明           | 示例                 |
+| ------------------------------------- | -------------- | -------------------- |
+| `text`                                | 可分词文本     | 商品描述、文章内容   |
+| `keyword`                             | 不分词精确匹配 | 品牌、国家、邮箱、IP |
+| `byte` / `short` / `integer` / `long` | 整型           | 年龄、编号           |
+| `float` / `double`                    | 浮点型         | 价格、权重           |
+| `boolean`                             | 布尔值         | 是否上架             |
+| `date`                                | 日期类型       | 发布时间             |
+| `object`                              | 对象类型       | 嵌套子字段           |
+
+------
+
+## 二、索引库（Index）的 CRUD 操作
+
+### 1. 创建索引库
+
+```
+PUT /fz
+{
+  "mappings": {
+    "properties": {
+      "info": {
+        "type": "text",
+        "analyzer": "ik_smart",
+        "index": true
+      },
+      "age": {
+        "type": "byte"
+      },
+      "email": {
+        "type": "keyword",
+        "index": false
+      },
+      "name": {
+        "type": "object",
+        "properties": {
+          "firstName": {
+            "type": "keyword"
+          },
+          "lastName": {
+            "type": "keyword"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+📌 **说明：**
+
+- `info`：文本字段，使用 `ik_smart` 分词器。
+- `email`：不参与索引。
+- `name`：对象类型，包含两个子字段。
+
+------
+
+### 2. 查询索引库
+
+```
+GET /fz
+```
+
+------
+
+###  3. 删除索引库
+
+```
+DELETE /fz
+```
+
+------
+
+###  4. 给索引库添加字段（修改映射）
+
+```
+PUT /fz/_mapping
+{
+  "properties": {
+    "weight": {
+      "type": "byte"
+    }
+  }
+}
+```
+
+📌 **注意：**
+ 只能新增字段，不能修改已有字段的类型（需要重建索引）。
+
+------
+
+## 三、文档（Document）的 CRUD 操作
+
+### 1. 新增文档
+
+```
+POST /fz/_doc/1
+{
+  "info": "你们好呀！",
+  "email": "123@qq.com",
+  "name": {
+    "firstName": "f",
+    "lastName": "z"
+  }
+}
+```
+
+------
+
+### 2. 查询文档
+
+```
+GET /fz/_doc/1
+```
+
+------
+
+###  3. 删除文档
+
+```
+DELETE /fz/_doc/1
+```
+
+------
+
+### 4. 全量修改（先删除后新增）
+
+```
+PUT /fz/_doc/1
+{
+  "info": "你们好呀！",
+  "email": "456@qq.com",
+  "name": {
+    "firstName": "f",
+    "lastName": "z"
+  }
+}
+```
+
+📌 **说明：**
+ 相当于“先删后增”，原字段会被全部覆盖。
+
+------
+
+###  5. 局部修改（保留未修改字段）
+
+```
+POST /fz/_update/1
+{
+  "doc": {
+    "name": {
+      "firstName": "f",
+      "lastName": "3"
+    }
+  }
+}
+```
+
+📌 **说明：**
+
+- 使用 `_update` + `doc` 关键字。
+- 仅更新指定字段，其余字段保持不变。
+
