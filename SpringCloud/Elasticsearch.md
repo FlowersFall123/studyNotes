@@ -42,9 +42,10 @@ docker run -d \
 
 📍访问地址：[http://192.168.195.131:5601](http://192.168.195.131:5601/)
 
-![kibana](F:\SpringCloud\图片\kibana.png)
+<img width="1876" height="932" alt="kibana" src="https://github.com/user-attachments/assets/cefb4cac-1821-4005-91af-d4e2ee5429a6" />
 
-![dev_tools](F:\SpringCloud\图片\dev_tools.png)
+<img width="659" height="748" alt="dev_tools" src="https://github.com/user-attachments/assets/d3ee44c1-49b9-40ca-a2df-803734494643" />
+
 
 ------
 
@@ -92,8 +93,8 @@ https://release.infinilabs.com/analysis-ik/stable/
    ```
    docker restart es
    ```
+<img width="1391" height="562" alt="ik" src="https://github.com/user-attachments/assets/a46d2de7-bacf-4a47-9608-578785e6ab46" />
 
-   ![ik](F:\SpringCloud\图片\ik.png)
 
 ------
 
@@ -108,8 +109,8 @@ POST /_analyze
   "text": ["Hello，我是你们的爸爸！"]
 }
 ```
+<img width="1876" height="895" alt="标准分词" src="https://github.com/user-attachments/assets/eb9acdb6-3188-43ce-b39b-02ed4bfbbbfd" />
 
-![标准分词](F:\SpringCloud\图片\标准分词.png)
 
 ------
 
@@ -138,8 +139,8 @@ POST /_analyze
 ```
 
 📌 分词更细，例如「程序员」→「程序」、「程序员」
+<img width="1875" height="897" alt="ik分词" src="https://github.com/user-attachments/assets/cb5ac802-ab7a-4ec4-a2ed-dbcecdd1fc87" />
 
-![ik分词](F:\SpringCloud\图片\ik分词.png)
 
 ------
 
@@ -149,10 +150,10 @@ POST /_analyze
 
 1. 找到配置文件：
     `elasticsearch/plugins/ik/config/IKAnalyzer.cfg.xml`
+<img width="1472" height="831" alt="扩展词典" src="https://github.com/user-attachments/assets/dbdcad5a-45d2-4ce0-ad56-e94aa016a063" />
 
-![扩展词典](F:\SpringCloud\图片\扩展词典.png)
+<img width="1618" height="799" alt="扩展词典2" src="https://github.com/user-attachments/assets/86da5175-5d9c-4db7-a1eb-88698d033335" />
 
-![扩展词典2](F:\SpringCloud\图片\扩展词典2.png)
 
 1. 在文件中配置扩展词典，例如：
 
@@ -174,6 +175,7 @@ POST /_analyze
    ```
    docker restart es
    ```
+<<<<<<< HEAD
 
 ![扩展词典3](F:\SpringCloud\图片\扩展词典3.png)
 
@@ -360,3 +362,6 @@ POST /fz/_update/1
 - 使用 `_update` + `doc` 关键字。
 - 仅更新指定字段，其余字段保持不变。
 
+=======
+<img width="1827" height="865" alt="扩展词典3" src="https://github.com/user-attachments/assets/cb40c094-2682-4369-adaf-dcf410aa15be" />
+>>>>>>> a7bc6d1727ee8c4b5395b12bb9716008f66b65fb
