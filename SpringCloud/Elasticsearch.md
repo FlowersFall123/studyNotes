@@ -526,6 +526,7 @@ void testIndexDoc() throws IOException {
 >
 > - 如果 ID 不存在 ⇒ 新增文档。
 > - 如果 ID 已存在 ⇒ 覆盖（全量更新）。
+<img width="1847" height="886" alt="获取的数据库数据" src="https://github.com/user-attachments/assets/86183aa7-4ee0-4d0e-930c-2497872a4390" />
 
 ------
 
