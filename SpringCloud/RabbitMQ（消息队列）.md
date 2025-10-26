@@ -1123,3 +1123,210 @@ void testPublisherDelayMessage() {
  **发送后 5 秒消息才会被投递到 `delay.queue` 并被消费。**
 
 
+
+
+
+#  RabbitMQ 公共封装
+
+## 一、设计背景
+
+在多模块项目中，例如微服务架构，常常会有多个服务需要使用消息队列（MQ）进行异步通信或解耦。但同时，也有一些模块并不依赖 MQ。
+ 为了**降低耦合、提高可复用性**，我们在 `hm-common` 模块中进行以下设计：
+
+- **提供统一的 MQ 工具类**（`RabbitMqHelper`），简化消息发送逻辑；
+- **提供必要依赖（scope = provided）**，保证编译不报错；
+- **共享 MQ 配置到 Nacos**，保证各服务配置一致；
+- **允许按需引入 MQ 依赖**，让不使用 MQ 的模块保持轻量化。
+
+------
+
+## 二、依赖选择
+
+在 `hm-common` 中引入的依赖如下：
+
+```
+<!-- AMQP 依赖 -->
+<dependency>
+    <groupId>org.springframework.amqp</groupId>
+    <artifactId>spring-amqp</artifactId>
+    <scope>provided</scope>
+</dependency>
+
+<!-- Spring 整合 RabbitMQ -->
+<dependency>
+    <groupId>org.springframework.amqp</groupId>
+    <artifactId>spring-rabbit</artifactId>
+    <scope>provided</scope>
+</dependency>
+
+<!-- JSON 处理依赖 -->
+<dependency>
+    <groupId>com.fasterxml.jackson.dataformat</groupId>
+    <artifactId>jackson-dataformat-xml</artifactId>
+    <scope>provided</scope>
+</dependency>
+```
+
+### ✅ 为什么使用 `provided` 而不是 `starter`
+
+| 对比项       | `provided`                         | `starter`                      |
+| ------------ | ---------------------------------- | ------------------------------ |
+| **作用**     | 编译时依赖，运行时由使用者自行引入 | 自动引入所有 MQ 相关依赖与配置 |
+| **灵活性**   | ✅ 使用者可按需决定是否引入 MQ      | ❌ 强制包含 MQ 依赖             |
+| **打包结果** | 不会被打入最终 jar                 | 会被打入 jar 包                |
+| **适用场景** | 公共模块、底层封装库               | 实际业务模块                   |
+
+> **总结：**
+>  在公共模块中使用 `provided`，可以让公共类在编译时识别 `RabbitTemplate` 等类型而不报错，但不会强制打包进最终运行环境，避免不必要的依赖。
+
+------
+
+## 三、共享配置（Nacos）
+
+将 MQ 连接配置集中放入 **Nacos 配置中心**，方便所有模块统一读取。
+
+### Nacos 配置示例
+
+```
+spring:
+  rabbitmq:
+    host: ${fz.mq.host:192.168.195.131}   # 主机名
+    port: ${fz.mq.port:5672}              # 端口
+    virtual-host: ${fz.mq.vhost:/fz}      # 虚拟主机
+    username: ${fz.mq.un:fz}              # 用户名
+    password: ${fz.mq.pw:123}             # 密码
+```
+
+- `${fz.mq.xxx}` 代表配置项可被覆盖；
+
+- `:` 后面的值为默认值；
+
+- 配置上传至 Nacos 后，各微服务只需在 `bootstrap.yml` 中声明：
+
+  ```
+  spring:
+    cloud:
+      nacos:
+        config:
+          server-addr: localhost:8848
+          file-extension: yaml
+          shared-configs:
+            - data-id: rabbitmq-config.yaml
+  ```
+
+------
+
+## 四、工具类封装 —— `RabbitMqHelper`
+
+通过封装 `RabbitTemplate`，简化消息发送逻辑。
+
+```
+import cn.hutool.core.lang.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.connection.CorrelationData;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.util.concurrent.ListenableFutureCallback;
+
+@Slf4j
+@RequiredArgsConstructor
+public class RabbitMqHelper {
+
+    private final RabbitTemplate rabbitTemplate;
+
+    /**
+     * 发送普通消息
+     */
+    public void sendMessage(String exchange, String routingKey, Object msg){
+        log.debug("准备发送消息，exchange:{}, routingKey:{}, msg:{}", exchange, routingKey, msg);
+        rabbitTemplate.convertAndSend(exchange, routingKey, msg);
+    }
+
+    /**
+     * 发送延迟消息
+     */
+    public void sendDelayMessage(String exchange, String routingKey, Object msg, int delay){
+        rabbitTemplate.convertAndSend(exchange, routingKey, msg, message -> {
+            message.getMessageProperties().setDelay(delay);
+            return message;
+        });
+    }
+
+    /**
+     * 发送消息并确认（带重试机制）
+     */
+    public void sendMessageWithConfirm(String exchange, String routingKey, Object msg, int maxRetries){
+        log.debug("准备发送消息，exchange:{}, routingKey:{}, msg:{}", exchange, routingKey, msg);
+        CorrelationData cd = new CorrelationData(UUID.randomUUID().toString(true));
+
+        cd.getFuture().addCallback(new ListenableFutureCallback<>() {
+            int retryCount;
+
+            @Override
+            public void onFailure(Throwable ex) {
+                log.error("处理ack回执失败", ex);
+            }
+
+            @Override
+            public void onSuccess(CorrelationData.Confirm result) {
+                if (result != null && !result.isAck()) {
+                    log.debug("消息发送失败，收到nack，已重试次数：{}", retryCount);
+                    if (retryCount >= maxRetries) {
+                        log.error("消息发送重试次数耗尽，发送失败");
+                        return;
+                    }
+                    CorrelationData cd = new CorrelationData(UUID.randomUUID().toString(true));
+                    cd.getFuture().addCallback(this);
+                    rabbitTemplate.convertAndSend(exchange, routingKey, msg, cd);
+                    retryCount++;
+                }
+            }
+        });
+
+        rabbitTemplate.convertAndSend(exchange, routingKey, msg, cd);
+    }
+}
+```
+
+------
+
+## 五、封装优点
+
+| 功能             | 优点                                                         |
+| ---------------- | ------------------------------------------------------------ |
+| **模块解耦**     | 公共模块仅提供接口，不强制引入依赖                           |
+| **易于维护**     | MQ 配置信息统一存储在 Nacos 中                               |
+| **代码复用**     | `RabbitMqHelper` 封装常见的发送模式                          |
+| **增强可靠性**   | 带确认机制与重试功能                                         |
+| **降低心智负担** | 开发者只需调用 `sendMessage()`、`sendDelayMessage()` 即可使用 MQ |
+
+------
+
+## 六、使用示例（在需要 MQ 的模块中）
+
+1. 引入依赖：
+
+```
+<dependency>
+    <groupId>org.springframework.boot</groupId>
+    <artifactId>spring-boot-starter-amqp</artifactId>
+</dependency>
+```
+
+1. 注入工具类并使用：
+
+```
+@Autowired
+private RabbitMqHelper rabbitMqHelper;
+
+rabbitMqHelper.sendMessage("order.exchange", "order.create", orderData);
+```
+
+------
+
+✅ **总结**
+
+- `hm-common` 仅提供**接口和工具类定义**，依赖范围为 `provided`；
+- Nacos 负责**配置集中管理**；
+- 实际业务模块按需**引入 starter 并使用封装工具类**；
+- 这种设计兼顾了 **灵活性、复用性和低耦合性**，是企业级项目中常见的最佳实践。
