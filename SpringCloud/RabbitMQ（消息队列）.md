@@ -967,7 +967,7 @@ public void listenObjectQueue(Message message) {
     System.out.println("object.queue的消息: " + message);
 }
 ```
-
+<img width="1082" height="307" alt="查看消息ID" src="https://github.com/user-attachments/assets/8162c326-2b3a-4f8c-90eb-a60a6b1209d7" />
 # RabbitMQ 消息延迟机制
 
 ------
@@ -1120,7 +1120,6 @@ void testPublisherDelayMessage() {
 ```
 
 ✅ **效果**：
- 发送后 5 秒消息才会被投递到 `delay.queue` 并被消费。
-=======
-<img width="1082" height="307" alt="查看消息ID" src="https://github.com/user-attachments/assets/8162c326-2b3a-4f8c-90eb-a60a6b1209d7" />
->>>>>>> 120980507e41a162425131e77336708bf62a65ea
+ **发送后 5 秒消息才会被投递到 `delay.queue` 并被消费。**
+
+
