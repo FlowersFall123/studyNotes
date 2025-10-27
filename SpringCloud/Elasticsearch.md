@@ -645,6 +645,7 @@ GET /items/_search
 >
 > - `match_all` 是最简单的查询，等价于“SELECT * FROM 表”。
 > - 常用于测试、分页展示或配合 `sort`、`from`、`size` 使用。
+<img width="1026" height="776" alt="快速查询" src="https://github.com/user-attachments/assets/6149ed3d-6800-4094-b9f6-d0cce71d4355" />
 
 ------
 
@@ -700,6 +701,7 @@ GET /items/_search
 >
 > - 当搜索词可能出现在多个字段中时使用。
 > - 例如在商品“名称”和“标题”字段中都查找“手机”。
+<img width="1726" height="820" alt="全文检索" src="https://github.com/user-attachments/assets/eefa9160-99ef-47bc-a59d-2ea2bbcc53fb" />
 
 ------
 
@@ -1070,6 +1072,7 @@ GET /items/_search
   }
 }
 ```
+<img width="1718" height="817" alt="高亮" src="https://github.com/user-attachments/assets/d8a3050a-cc58-471b-95f0-ec612e0b847a" />
 
 ------
 
