@@ -366,7 +366,7 @@ POST /fz/_update/1
 
 
 
-# JavaRestClient
+# JavaRestClient-创建索引
 
 ## 一、依赖与初始化
 
@@ -1115,3 +1115,177 @@ GET /items/_search
   }
 }
 ```
+
+# Elasticsearch Java Rest Client 查询笔记
+
+使用 `RestHighLevelClient` 可以在 Java 中操作 Elasticsearch，以下是常见查询场景：
+
+------
+
+## 一、快速查询（Match All 查询）
+
+**示例：**
+
+```
+void TestMatchAll() throws IOException {
+    // 1. 创建 SearchRequest 对象，指定索引
+    SearchRequest request = new SearchRequest("items");
+
+    // 2. 设置查询条件 —— 查询所有文档
+    request.source().query(QueryBuilders.matchAllQuery());
+
+    // 3. 发送请求
+    SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+
+    // 4. 解析响应结果
+    parseResponseResult(response);
+}
+```
+
+**说明：**
+
+- `QueryBuilders.matchAllQuery()`：匹配所有文档。
+- 适合用于：测试查询、全量数据预览。
+
+------
+
+## 二、叶子查询（组合条件查询）
+
+**示例：**
+
+```
+void testSearch() throws IOException {
+    SearchRequest request = new SearchRequest("items");
+
+    request.source().query(
+        QueryBuilders.boolQuery()
+            .must(QueryBuilders.matchQuery("name", "拉杆箱"))          // 必须匹配 name
+            .filter(QueryBuilders.termQuery("brand", "莎米特"))        // 精确过滤 brand
+            .filter(QueryBuilders.rangeQuery("price").lt(50000))       // 过滤 price < 50000
+    );
+
+    SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+    parseResponseResult(response);
+}
+```
+
+**说明：**
+
+- `boolQuery()`：组合多条件查询。
+- `must()`：必须匹配（类似 SQL 的 AND）。
+- `filter()`：过滤条件，不计算相关性，效率高。
+- `rangeQuery()`：范围查询。
+
+📌 **应用场景：**
+ 电商搜索，比如“品牌 = 莎米特 且 名称包含拉杆箱 且 价格小于50000”。
+
+------
+
+##  三、分页 + 排序查询
+
+**示例：**
+
+```
+void testSortAndPage() throws IOException {
+    int pageNo = 1, pageSize = 5; // 模拟前端分页参数
+
+    SearchRequest request = new SearchRequest("items");
+    request.source().query(QueryBuilders.matchAllQuery());
+
+    // 分页
+    request.source().from((pageNo - 1) * pageSize).size(pageSize);
+
+    // 排序：先按销量降序，再按价格降序
+    request.source().sort("sold", SortOrder.DESC)
+                    .sort("price", SortOrder.DESC);
+
+    SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+    parseResponseResult(response);
+}
+```
+
+**说明：**
+
+- `.from()`：起始位置（偏移量）。
+- `.size()`：每页条数。
+- `.sort(field, order)`：排序字段与顺序。
+- 注意：深度分页性能差，可用 `search_after` 代替。
+
+📌 **应用场景：**
+ 商品列表分页展示、排行榜。
+
+------
+
+## 四、高亮查询（Highlight）
+
+**示例：**
+
+```
+void testHighlight() throws IOException {
+    SearchRequest request = new SearchRequest("items");
+
+    request.source().query(QueryBuilders.matchQuery("name", "拉杆箱"));
+
+    // 设置高亮
+    request.source().highlighter(
+        SearchSourceBuilder.highlight()
+            .field("name")          // 高亮字段
+            .preTags("<em>")        // 高亮前缀
+            .postTags("</em>")      // 高亮后缀
+    );
+
+    SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+    parseResponseResult(response);
+}
+```
+
+**说明：**
+
+- 高亮用于在搜索结果中突出关键字。
+- `preTags` / `postTags` 用于指定 HTML 标记（可自定义颜色等）。
+
+📌 **应用场景：**
+ 搜索结果关键字标红显示。
+
+------
+
+## 五、通用结果解析方法
+
+**示例：**
+
+```
+private static void parseResponseResult(SearchResponse response) {
+    // 1. 获取命中结果集
+    SearchHits searchHits = response.getHits();
+    long total = searchHits.getTotalHits().value;
+    System.out.println("total = " + total);
+
+    // 2. 遍历命中文档
+    for (SearchHit hit : searchHits.getHits()) {
+        // 获取原始 JSON
+        String json = hit.getSourceAsString();
+
+        // JSON -> 对象
+        ItemDoc doc = JSONUtil.toBean(json, ItemDoc.class);
+
+        // 3. 处理高亮字段
+        Map<String, HighlightField> highlightFields = hit.getHighlightFields();
+        if (highlightFields != null && !highlightFields.isEmpty()) {
+            HighlightField hf = highlightFields.get("name");
+            if (hf != null) {
+                String hfName = hf.getFragments()[0].string();
+                doc.setName(hfName); // 替换为高亮内容
+            }
+        }
+
+        System.out.println("doc = " + doc);
+    }
+}
+```
+
+**说明：**
+
+- `SearchHits`：包含所有匹配结果。
+- `getSourceAsString()`：取 `_source` 内容（JSON格式）。
+- `HighlightField`：高亮内容集合。
+- `BeanUtil.toBean()`：把 JSON 转换成 Java 对象。
