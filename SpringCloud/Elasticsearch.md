@@ -1252,8 +1252,8 @@ void testHighlight() throws IOException {
 ## 五、通用结果解析方法
 <img width="1344" height="665" alt="数据解析" src="https://github.com/user-attachments/assets/834b1300-7e26-40ef-b357-ac35f219058c" />
 <img width="1411" height="720" alt="高亮显示" src="https://github.com/user-attachments/assets/ff7ad787-6154-429c-bf5d-0ae781d847b1" />
-**示例：**
 
+**示例：**
 ```
 private static void parseResponseResult(SearchResponse response) {
     // 1. 获取命中结果集
