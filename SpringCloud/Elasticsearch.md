@@ -1238,7 +1238,7 @@ void testHighlight() throws IOException {
     parseResponseResult(response);
 }
 ```
-
+<img width="1753" height="634" alt="Java高亮" src="https://github.com/user-attachments/assets/7cfc5a52-2b19-4a8c-b5ad-e9e65514e6c5" />
 **说明：**
 
 - 高亮用于在搜索结果中突出关键字。
@@ -1250,7 +1250,8 @@ void testHighlight() throws IOException {
 ------
 
 ## 五、通用结果解析方法
-
+<img width="1344" height="665" alt="数据解析" src="https://github.com/user-attachments/assets/834b1300-7e26-40ef-b357-ac35f219058c" />
+<img width="1411" height="720" alt="高亮显示" src="https://github.com/user-attachments/assets/ff7ad787-6154-429c-bf5d-0ae781d847b1" />
 **示例：**
 
 ```
@@ -1289,3 +1290,5 @@ private static void parseResponseResult(SearchResponse response) {
 - `getSourceAsString()`：取 `_source` 内容（JSON格式）。
 - `HighlightField`：高亮内容集合。
 - `BeanUtil.toBean()`：把 JSON 转换成 Java 对象。
+
+
