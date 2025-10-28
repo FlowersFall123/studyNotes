@@ -1346,6 +1346,7 @@ GET /items/_search
 | `"size"`         | 返回的桶（分组）数量最大值            |
 
 ✅ **结果**：统计出每种 `category` 出现的次数（文档数量）。
+<img width="1525" height="814" alt="桶聚合" src="https://github.com/user-attachments/assets/c5ecc7be-d9b6-4a57-a639-265403001cf3" />
 
 ------
 
@@ -1419,10 +1420,12 @@ GET /items/_search
 - 每个桶内计算价格字段（`price`）的统计信息；
 - `stats` 聚合可以同时返回：
    👉 最小值（min）、最大值（max）、平均值（avg）、总和（sum）、数量（count）。
+<img width="1684" height="804" alt="嵌套聚合" src="https://github.com/user-attachments/assets/42606da5-5106-47d4-89b6-982dbda48f69" />
 
 ------
 
 ## 四、Java RestHighLevelClient 实现聚合
+<img width="1386" height="676" alt="聚合解析" src="https://github.com/user-attachments/assets/52aeef8b-6485-44ca-9c89-035090559925" />
 
 ```
 void testAgg() throws IOException {
