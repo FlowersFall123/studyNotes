@@ -1254,6 +1254,7 @@ void testHighlight() throws IOException {
 <img width="1411" height="720" alt="高亮显示" src="https://github.com/user-attachments/assets/ff7ad787-6154-429c-bf5d-0ae781d847b1" />
 
 **示例：**
+
 ```
 private static void parseResponseResult(SearchResponse response) {
     // 1. 获取命中结果集
@@ -1292,3 +1293,165 @@ private static void parseResponseResult(SearchResponse response) {
 - `BeanUtil.toBean()`：把 JSON 转换成 Java 对象。
 
 
+
+# Elasticsearch 聚合
+
+## 一、聚合的概念
+
+Elasticsearch 的聚合（Aggregation）类似于 SQL 的 `GROUP BY`、`COUNT`、`AVG`、`SUM` 等操作，用于**对数据进行统计分析**。
+ 聚合可以在查询的同时执行，也可以单独执行。
+
+------
+
+## 二、聚合的分类
+
+| 类型                   | 说明                                           | 示例                         |
+| ---------------------- | ---------------------------------------------- | ---------------------------- |
+| 🎯 桶（Bucket）聚合     | 按字段的值或范围分组（类似 SQL 的 `GROUP BY`） | terms、range、date_histogram |
+| 📊 度量（Metric）聚合   | 对数值字段计算统计结果                         | avg、sum、max、min、stats    |
+| 🔗 管道（Pipeline）聚合 | 基于其他聚合结果再做计算                       | derivative、avg_bucket       |
+
+> ⚠️ **注意**：参与聚合的字段不能是分词字段（`text` 类型），一般使用 `keyword` 类型。
+
+------
+
+## 三、DSL 聚合语法讲解
+
+### 1、基本聚合（terms 桶聚合）
+
+```
+GET /items/_search
+{
+  "size": 0,
+  "aggs": {
+    "category_agg": {
+      "terms": {
+        "field": "category",
+        "size": 20
+      }
+    }
+  }
+}
+```
+
+### 语法说明：
+
+| 字段             | 含义                                  |
+| ---------------- | ------------------------------------- |
+| `size: 0`        | 不返回文档，只返回聚合结果            |
+| `aggs`           | 定义聚合操作                          |
+| `"category_agg"` | 聚合名称，自定义，不能重复            |
+| `"terms"`        | 聚合类型，这里是“按字段分组”          |
+| `"field"`        | 参与聚合的字段（需为 `keyword` 类型） |
+| `"size"`         | 返回的桶（分组）数量最大值            |
+
+✅ **结果**：统计出每种 `category` 出现的次数（文档数量）。
+
+------
+
+### 2、带过滤条件的聚合
+
+```
+GET /items/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "category": "手机" } },
+        { "range": { "price": { "gte": 300000 } } }
+      ]
+    }
+  },
+  "size": 0,
+  "aggs": {
+    "brand_agg": {
+      "terms": {
+        "field": "brand",
+        "size": 20
+      }
+    }
+  }
+}
+```
+
+📘 **解释：**
+
+- 使用 `bool` + `filter` 语句限制查询范围；
+- 对过滤后的结果再进行聚合统计；
+- 返回各个品牌（`brand`）对应的文档数量。
+
+------
+
+### 3、嵌套聚合（桶 + 度量聚合）
+
+```
+GET /items/_search
+{
+  "query": {
+    "bool": {
+      "filter": [
+        { "term": { "category": "手机" } }
+      ]
+    }
+  },
+  "size": 0,
+  "aggs": {
+    "brand_agg": {
+      "terms": {
+        "field": "brand",
+        "size": 20
+      },
+      "aggs": {
+        "stats_meric": {
+          "stats": {
+            "field": "price"
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+📘 **解释：**
+
+- 先按品牌（`brand`）分桶；
+- 每个桶内计算价格字段（`price`）的统计信息；
+- `stats` 聚合可以同时返回：
+   👉 最小值（min）、最大值（max）、平均值（avg）、总和（sum）、数量（count）。
+
+------
+
+## 四、Java RestHighLevelClient 实现聚合
+
+```
+void testAgg() throws IOException {
+    // 1. 创建 SearchRequest 对象
+    SearchRequest request = new SearchRequest("items");
+
+    // 2. 设置查询体参数
+    request.source().size(0); // 不返回文档
+
+    // 2.1 添加聚合条件
+    request.source().aggregation(
+        AggregationBuilders
+            .terms("brandAgg")     // 聚合名称
+            .field("brand")        // 按brand字段分组
+            .size(20)              // 返回前20个
+    );
+
+    // 3. 发送请求
+    SearchResponse response = client.search(request, RequestOptions.DEFAULT);
+
+    // 4. 解析聚合结果
+    Aggregations aggregations = response.getAggregations();
+    Terms terms = aggregations.get("brandAgg");
+    List<? extends Terms.Bucket> buckets = terms.getBuckets(); // 获取桶列表
+
+    // 5. 遍历输出结果
+    for (Terms.Bucket bucket : buckets) {
+        System.out.println("品牌：" + bucket.getKeyAsString());
+        System.out.println("商品数量：" + bucket.getDocCount());
+    }
+}
+```
