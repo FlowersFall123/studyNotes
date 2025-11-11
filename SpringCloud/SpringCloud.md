@@ -1562,9 +1562,11 @@ public class UserInfoInterceptor implements HandlerInterceptor {
 ```
 @Configuration
 @ConditionalOnClass(DispatcherServlet.class) // 微服务使用，网关不使用
+//@ConditionalOnWebApplication(type = SERVLET) // 版本较新就使用这个
 public class MvcConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
+        log.info("-----------MvcConfig add UserInfoInterceptor-----------");
         registry.addInterceptor(new UserInfoInterceptor());
     }
 }
@@ -1582,11 +1584,10 @@ public class MvcConfig implements WebMvcConfigurer {
 
 ##### 3️⃣ spring.factories（自动装配）
 
-**位置**：`META-INF/spring.factories`
-
+**位置**：`META-INF.spring`
+**文件名**：`org.springframework.boot.autoconfigure.AutoConfiguration.imports`
 ```
-org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
-  com.hmall.common.config.MvcConfig,\
+  com.hmall.common.config.MvcConfig
 ```
 
 让 `MvcConfig` 能够被 **Spring Boot 自动装配机制** 自动加载。
