@@ -1592,8 +1592,8 @@ public class MvcConfig implements WebMvcConfigurer {
 
 让 `MvcConfig` 能够被 **Spring Boot 自动装配机制** 自动加载。
 
-Spring Boot 启动时会自动扫描所有依赖中 `META-INF/spring.factories` 文件，
- 并加载里面声明的 `EnableAutoConfiguration` 类。
+Spring Boot 启动时会自动扫描所有依赖中 `META-INF.spring` 文件，
+ 并加载里面声明的类。
 
 🟢 **作用：**
 
