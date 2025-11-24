@@ -69,6 +69,7 @@ public void addUser(User user) {
 ------
 
 ## 五、结合 AOP 解析注解
+[AOP笔记](https://github.com/FlowersFall123/studyNotes/blob/main/ToBePracticed/Spring%20AOP%20%EF%BC%88%E5%90%AB%E8%87%AA%E5%AE%9A%E4%B9%89%E6%B3%A8%E8%A7%A3%20%2B%20%E5%AE%9E%E6%88%98%E6%A8%A1%E6%9D%BF%EF%BC%89.md)
 
 ### ✔️ AOP 切面示例
 
