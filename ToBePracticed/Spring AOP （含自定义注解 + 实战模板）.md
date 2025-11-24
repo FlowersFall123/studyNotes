@@ -120,6 +120,8 @@ execution(* com.example.service..*(..))
 
 ### ✨ 8.1 自定义注解 @Log
 
+[自定义注解笔记(https://github.com/FlowersFall123/studyNotes/blob/main/ToBePracticed/Java%20%E8%87%AA%E5%AE%9A%E4%B9%89%E6%B3%A8%E8%A7%A3%20%2B%20AOP.md)
+
 📁 `com.xxx.annotation.Log.java`
 
 ```
