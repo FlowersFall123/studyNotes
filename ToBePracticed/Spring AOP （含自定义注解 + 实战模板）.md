@@ -111,7 +111,7 @@ execution(* com.example.service..*(..))
 
 这是企业开发中最常用的 AOP 模板结构：
 
-- @Log：用于记录日志
+- @MyLog：用于记录日志
 - AOP 切面：统一输出入参、返回值、耗时
 
 下面的代码可以直接复制到你的项目即可运行。
@@ -122,7 +122,7 @@ execution(* com.example.service..*(..))
 
 [自定义注解笔记](https://github.com/FlowersFall123/studyNotes/blob/main/ToBePracticed/Java%20%E8%87%AA%E5%AE%9A%E4%B9%89%E6%B3%A8%E8%A7%A3%20%2B%20AOP.md)
 
-📁 `com.xxx.annotation.Log.java`
+📁 `com.signBridge.common.tool.MyLog`
 
 ```
 package com.xxx.annotation;
@@ -132,7 +132,7 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.METHOD)
 @Documented
-public @interface Log {
+public @interface MyLog {
     String value() default "";  // 可填写业务说明
 }
 ```
@@ -144,25 +144,22 @@ public @interface Log {
 📁 `com.xxx.aop.LogAspect.java`
 
 ```
-package com.xxx.aop;
+package com.signBridge.common.tool;
 
-import com.xxx.annotation.Log;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.aspectj.lang.ProceedingJoinPoint;
 import org.aspectj.lang.annotation.*;
 import org.aspectj.lang.reflect.MethodSignature;
-import org.springframework.stereotype.Component;
 
 import java.lang.reflect.Method;
 
 @Aspect
-@Component
+@Component//微服务不需要，因为会在MvcConfig里面注册，避免重复注册
 public class LogAspect {
-
     private final ObjectMapper mapper = new ObjectMapper();
 
-    // 匹配所有加了 @Log 的方法
-    @Pointcut("@annotation(com.xxx.annotation.Log)")
+    // 匹配所有加了 @MyLog 的方法
+    @Pointcut("@annotation(com.signBridge.common.tool.MyLog)")
     public void logPointcut() {}
 
     @Around("logPointcut()")
@@ -171,7 +168,7 @@ public class LogAspect {
         long start = System.currentTimeMillis();
 
         Method method = ((MethodSignature) pjp.getSignature()).getMethod();
-        Log logAnno = method.getAnnotation(Log.class);
+        MyLog logAnno = method.getAnnotation(MyLog.class);
 
         String methodName = method.getName();
         String params = mapper.writeValueAsString(pjp.getArgs());
@@ -198,7 +195,7 @@ public class LogAspect {
 
 ------
 
-### ✨ 8.3 在业务方法上使用 @Log
+### ✨ 8.3 在业务方法上使用 @MyLog
 
 📁 `UserService.java`
 
@@ -206,7 +203,7 @@ public class LogAspect {
 @Service
 public class UserService {
 
-    @Log("查询用户信息")
+    @MyLog("查询用户信息")
     public String getUser(String id) {
         System.out.println("【业务方法执行】查询：" + id);
         return "User-" + id;
@@ -215,6 +212,20 @@ public class UserService {
 ```
 
 只需加一个注解，日志自动记录。
+
+**补充：微服务的话需要注册到对应的公共模块的MvcConfig配置里面(自动装配)**
+
+```
+/**
+ * 注册全局 LogAspect 切面
+ * @return
+ */
+@Bean
+public LogAspect logAspect() {
+    log.info("----------- 注册全局 LogAspect 切面 -----------");
+    return new LogAspect();
+}
+```
 
 ------
 
