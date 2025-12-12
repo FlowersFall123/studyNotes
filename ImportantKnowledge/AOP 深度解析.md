@@ -89,6 +89,8 @@ public void deleteUser(Long id) {
 
 ## 5. 实战进阶：获取参数、返回值与控制流程
 
+[练习代码演示](https://github.com/FlowersFall123/courseWork/blob/main/exercises/springDemo/SpringTest/src/main/com.springTest/aop/AroundAop.java)
+
 这是 AOP 最强大的地方。你可以通过 `JoinPoint` 和 `ProceedingJoinPoint` 对象来获取上下文信息。
 
 ### 5.1 获取方法名和参数 (`JoinPoint`)
@@ -196,6 +198,8 @@ public void deleteUser(Long id) { ... }
 ```
 
 ### 5.5 通用参数处理 (反射实战)
+
+[练习代码演示](https://github.com/FlowersFall123/courseWork/blob/main/exercises/springDemo/SpringTest/src/main/com.springTest/aop/AroundAop.java)
 
 当你无法预知参数类型，但需要对所有对象做统一处理（如：统一去空格、统一填充 `updateTime`）时，可以使用 **反射**。
 

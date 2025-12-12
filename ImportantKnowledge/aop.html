@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AOP 深度解析与实战手册 | Pro Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap');
+        
+        body { font-family: 'Plus Jakarta Sans', 'Noto Sans SC', sans-serif; background-color: #f8fafc; }
+        code, pre { font-family: 'JetBrains Mono', monospace; }
+        
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; border: 2px solid #f8fafc; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+        /* Animations */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-up { animation: fadeUp 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards; opacity: 0; }
+        .delay-100 { animation-delay: 0.1s; }
+        .delay-200 { animation-delay: 0.2s; }
+        .delay-300 { animation-delay: 0.3s; }
+
+        /* Burger Layer Styles */
+        .burger-layer { transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); transform-origin: center; }
+        .burger-layer:hover { transform: scale(1.03) translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1), 0 8px 10px -6px rgba(0,0,0,0.1); z-index: 10; }
+        .burger-layer.active { transform: scale(1.05) translateX(10px); border-left: 6px solid #3b82f6; z-index: 20; }
+        
+        /* Console Animation */
+        .console-line { animation: slideIn 0.3s ease-out forwards; opacity: 0; transform: translateX(-10px); }
+        @keyframes slideIn { to { opacity: 1; transform: translateX(0); } }
+
+        /* Mac-like Window Header */
+        .mac-dots { display: flex; gap: 6px; }
+        .mac-dots span { width: 10px; height: 10px; border-radius: 50%; }
+        .dot-red { background: #ff5f56; }
+        .dot-yellow { background: #ffbd2e; }
+        .dot-green { background: #27c93f; }
+
+        /* Wave Pattern for Pointcut */
+        .wave-pattern {
+            background-image: radial-gradient(circle at 10px -5px, transparent 12px, #22c55e 13px);
+            background-size: 20px 20px;
+        }
+
+        /* Glass Effect */
+        .glass { background: rgba(255, 255, 255, 0.7); backdrop-filter: blur(10px); -webkit-backdrop-filter: blur(10px); }
+    </style>
+    <!-- Chosen Palette: Modern Slate (Base), Vivid Blue (Primary), Soft Gradients, Semantic Colors (Red/Green/Amber) -->
+    <!-- UPDATES: Added 5.5 Reflection and 5.6 Interface Optimization tabs to the Code Patterns section. -->
+</head>
+<body class="bg-slate-50 text-slate-800 antialiased selection:bg-blue-500 selection:text-white">
+
+    <!-- Navigation -->
+    <nav class="sticky top-0 z-50 glass border-b border-slate-200/60 shadow-sm transition-all duration-300">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16 items-center">
+                <div class="flex items-center gap-3 cursor-pointer group">
+                    <div class="w-9 h-9 bg-gradient-to-br from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center text-white font-bold font-mono shadow-lg shadow-blue-500/30 group-hover:scale-105 transition-transform">A</div>
+                    <span class="font-bold text-xl tracking-tight text-slate-800 group-hover:text-blue-600 transition-colors">AOP <span class="font-normal text-slate-500">Mastery</span></span>
+                </div>
+                <div class="hidden md:flex space-x-1 p-1 bg-slate-100/50 rounded-full border border-slate-200/50">
+                    <a href="#concept" class="px-4 py-1.5 text-sm font-semibold text-slate-600 rounded-full hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all">核心概念</a>
+                    <a href="#terminology" class="px-4 py-1.5 text-sm font-semibold text-slate-600 rounded-full hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all">术语汉堡</a>
+                    <a href="#code-patterns" class="px-4 py-1.5 text-sm font-semibold text-slate-600 rounded-full hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all">实战代码</a>
+                    <a href="#simulator" class="px-4 py-1.5 text-sm font-semibold text-slate-600 rounded-full hover:bg-white hover:text-blue-600 hover:shadow-sm transition-all">模拟器</a>
+                    <a href="#pitfalls" class="px-4 py-1.5 text-sm font-semibold text-red-500 rounded-full hover:bg-red-50 hover:text-red-600 hover:shadow-sm transition-all"><i class="fas fa-exclamation-triangle mr-1"></i>避坑</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="concept" class="relative pt-20 pb-24 px-4 overflow-hidden">
+        <!-- Background Decoration -->
+        <div class="absolute top-0 left-0 w-full h-full overflow-hidden -z-10 pointer-events-none">
+            <div class="absolute -top-[20%] -left-[10%] w-[50%] h-[50%] rounded-full bg-blue-100/50 blur-[100px]"></div>
+            <div class="absolute top-[20%] -right-[10%] w-[40%] h-[60%] rounded-full bg-indigo-100/50 blur-[100px]"></div>
+        </div>
+
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
+            <div class="animate-fade-up">
+                <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 border border-blue-100 text-blue-700 rounded-full text-xs font-bold mb-6 uppercase tracking-wide shadow-sm">
+                    <span class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></span> Paradigm Shift
+                </div>
+                <h1 class="text-5xl lg:text-6xl font-extrabold text-slate-900 mb-6 leading-[1.15] tracking-tight">
+                    面向切面编程 <br>
+                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600">解耦的艺术</span>
+                </h1>
+                <p class="text-lg text-slate-600 mb-8 leading-relaxed max-w-lg">
+                    AOP (Aspect-Oriented Programming) 让业务逻辑回归纯粹。通过分离<strong>日志、安全、事务</strong>等横切关注点，告别重复的 "面条代码"。
+                </p>
+                
+                <div class="flex gap-4">
+                    <a href="#terminology" class="px-6 py-3.5 bg-slate-900 text-white font-bold rounded-xl shadow-xl shadow-slate-900/20 hover:bg-slate-800 hover:-translate-y-1 transition-all flex items-center">
+                        开始学习 <i class="fas fa-arrow-right ml-2 text-xs"></i>
+                    </a>
+                    <a href="#simulator" class="px-6 py-3.5 bg-white text-slate-700 border border-slate-200 font-bold rounded-xl shadow-sm hover:border-blue-300 hover:text-blue-600 hover:-translate-y-1 transition-all">
+                        尝试模拟器
+                    </a>
+                </div>
+            </div>
+            
+            <div class="relative animate-fade-up delay-100">
+                <div class="absolute -inset-1 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-3xl blur opacity-20"></div>
+                <div class="relative bg-white p-8 rounded-3xl shadow-2xl border border-slate-100">
+                    <div class="flex items-center justify-between mb-6">
+                        <div>
+                            <h3 class="font-bold text-xl text-slate-800">代码复杂度对比</h3>
+                            <p class="text-sm text-slate-400">Lines of Code (LOC) Analysis</p>
+                        </div>
+                        <div class="bg-slate-50 p-2 rounded-lg">
+                            <i class="fas fa-chart-bar text-blue-500 text-xl"></i>
+                        </div>
+                    </div>
+                    <div class="chart-wrapper">
+                        <canvas id="complexityChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Terminology Section (Burger) -->
+    <section id="terminology" class="py-24 bg-white relative">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center max-w-3xl mx-auto mb-16 animate-fade-up">
+                <h2 class="text-3xl lg:text-4xl font-extrabold text-slate-900 mb-4">AOP 核心术语：汉堡包模型</h2>
+                <p class="text-slate-600 text-lg">理解 AOP 的五个核心概念，就像理解汉堡的结构一样直观。</p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+                <!-- Burger Interactive -->
+                <div class="lg:col-span-5 space-y-3 select-none flex flex-col items-center animate-fade-up delay-100 perspective-1000">
+                    <!-- Top Bun -->
+                    <div onclick="selectTerm('aspect')" class="burger-layer w-72 h-20 bg-gradient-to-b from-amber-300 to-amber-400 rounded-t-[4rem] border-b-4 border-amber-500/30 text-center shadow-[0_10px_20px_-5px_rgba(245,158,11,0.4)] relative cursor-pointer group flex flex-col justify-center items-center">
+                        <span class="font-bold text-amber-900 text-lg drop-shadow-sm group-hover:scale-110 transition-transform">Top Bun (Aspect)</span>
+                        <span class="text-xs text-amber-800 font-medium opacity-80">前置通知 @Before</span>
+                        <!-- Sesame Seeds -->
+                        <div class="absolute top-4 left-10 w-1.5 h-2 bg-amber-100 rounded-full opacity-60"></div>
+                        <div class="absolute top-6 right-16 w-1.5 h-2 bg-amber-100 rounded-full opacity-60 rotate-45"></div>
+                        <div class="absolute top-3 right-24 w-1.5 h-2 bg-amber-100 rounded-full opacity-60 -rotate-12"></div>
+                    </div>
+                    
+                    <!-- Pointcut (Lettuce) -->
+                    <div onclick="selectTerm('pointcut')" class="burger-layer w-80 h-10 bg-gradient-to-r from-green-500 to-green-400 rounded-xl shadow-lg relative cursor-pointer flex items-center justify-center wave-edge z-10 mx-auto transform -rotate-1 hover:rotate-0 transition-transform">
+                        <span class="font-bold text-white text-sm drop-shadow-md">Lettuce (Pointcut)</span>
+                    </div>
+
+                    <!-- Joinpoint (Tomato) -->
+                    <div onclick="selectTerm('joinpoint')" class="burger-layer w-72 h-6 bg-red-500 rounded-full shadow-md relative cursor-pointer flex items-center justify-center transform rotate-1 hover:rotate-0 transition-transform z-0">
+                        <span class="font-bold text-white text-xs opacity-90">Tomato (Joinpoint)</span>
+                    </div>
+
+                    <!-- Target (Meat) -->
+                    <div onclick="selectTerm('target')" class="burger-layer w-72 h-24 bg-gradient-to-b from-amber-800 to-amber-900 rounded-2xl shadow-[0_10px_25px_-5px_rgba(120,53,15,0.5)] border-y-4 border-amber-950/30 relative cursor-pointer flex items-center justify-center my-1 z-10 group">
+                        <div class="text-center">
+                            <span class="font-black text-amber-100 text-2xl tracking-widest drop-shadow-md group-hover:tracking-[0.2em] transition-all">TARGET</span>
+                            <span class="block text-[10px] text-amber-200/60 font-mono mt-1">CORE BUSINESS LOGIC</span>
+                        </div>
+                    </div>
+
+                    <!-- Bottom Bun -->
+                    <div onclick="selectTerm('weaving')" class="burger-layer w-72 h-16 bg-gradient-to-b from-amber-300 to-amber-400 rounded-b-[3rem] border-t-4 border-amber-500/30 text-center shadow-[0_10px_20px_-5px_rgba(245,158,11,0.4)] relative cursor-pointer flex flex-col justify-center items-center">
+                        <span class="font-bold text-amber-900">Bottom Bun (Weaving)</span>
+                        <span class="text-xs text-amber-800 font-medium opacity-80">后置/环绕通知</span>
+                    </div>
+                </div>
+
+                <!-- Definition Panel -->
+                <div class="lg:col-span-7 h-full min-h-[400px] animate-fade-up delay-200">
+                    <div class="bg-white rounded-3xl p-10 border border-slate-100 shadow-[0_20px_40px_-10px_rgba(0,0,0,0.05)] h-full flex flex-col justify-center relative overflow-hidden group">
+                        <!-- Decorative bg icon -->
+                        <div class="absolute -bottom-10 -right-10 text-slate-50 text-9xl transform -rotate-12 transition-transform group-hover:scale-110 group-hover:rotate-0 duration-700">
+                            <i class="fas fa-book-open"></i>
+                        </div>
+
+                        <div id="term-content" class="relative z-10">
+                            <div class="text-center">
+                                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-50 text-blue-500 rounded-2xl mb-6 animate-bounce">
+                                    <i class="fas fa-hand-pointer text-2xl"></i>
+                                </div>
+                                <h3 class="text-2xl font-bold text-slate-800 mb-2">点击左侧汉堡层级</h3>
+                                <p class="text-slate-500">查看对应的 AOP 核心概念解析</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Code Patterns Section (Tabbed Interface) -->
+    <section id="code-patterns" class="py-24 bg-slate-50 border-y border-slate-200">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="text-center mb-12 animate-fade-up">
+                <span class="text-blue-600 font-bold tracking-wider text-sm uppercase">Advanced Techniques</span>
+                <h2 class="text-3xl font-extrabold text-slate-900 mt-2">核心代码模式库</h2>
+                <p class="text-slate-600 mt-3">生产级 AOP 实现方案，直接复制可用。</p>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden animate-fade-up delay-100">
+                <!-- Tab Headers -->
+                <div class="flex border-b border-slate-200 bg-slate-50/50 overflow-x-auto">
+                    <button onclick="switchCodeTab('args')" id="btn-args" class="tab-btn active px-6 py-4 text-sm font-bold text-slate-500 hover:text-blue-600 focus:outline-none whitespace-nowrap transition-all border-b-2 border-transparent hover:bg-slate-50">
+                        <i class="fas fa-cube mr-2"></i>5.1 获取参数
+                    </button>
+                    <button onclick="switchCodeTab('return')" id="btn-return" class="tab-btn px-6 py-4 text-sm font-bold text-slate-500 hover:text-blue-600 focus:outline-none whitespace-nowrap transition-all border-b-2 border-transparent hover:bg-slate-50">
+                        <i class="fas fa-reply mr-2"></i>5.2 获取返回值
+                    </button>
+                    <button onclick="switchCodeTab('around')" id="btn-around" class="tab-btn px-6 py-4 text-sm font-bold text-slate-500 hover:text-blue-600 focus:outline-none whitespace-nowrap transition-all border-b-2 border-transparent hover:bg-slate-50">
+                        <i class="fas fa-ring mr-2"></i>5.3 环绕通知
+                    </button>
+                    <button onclick="switchCodeTab('annotation')" id="btn-annotation" class="tab-btn px-6 py-4 text-sm font-bold text-slate-500 hover:text-blue-600 focus:outline-none whitespace-nowrap transition-all border-b-2 border-transparent hover:bg-slate-50">
+                        <i class="fas fa-tag mr-2"></i>5.4 注解实战
+                    </button>
+                    <button onclick="switchCodeTab('reflection')" id="btn-reflection" class="tab-btn px-6 py-4 text-sm font-bold text-slate-500 hover:text-blue-600 focus:outline-none whitespace-nowrap transition-all border-b-2 border-transparent hover:bg-slate-50">
+                        <i class="fas fa-magic mr-2"></i>5.5 通用反射
+                    </button>
+                    <button onclick="switchCodeTab('interface')" id="btn-interface" class="tab-btn px-6 py-4 text-sm font-bold text-slate-500 hover:text-blue-600 focus:outline-none whitespace-nowrap transition-all border-b-2 border-transparent hover:bg-slate-50">
+                        <i class="fas fa-bolt mr-2"></i>5.6 接口优化
+                    </button>
+                </div>
+
+                <!-- Code Window -->
+                <div class="bg-[#1e293b] p-6 min-h-[400px] flex flex-col">
+                    <!-- Mac Header -->
+                    <div class="flex items-center justify-between mb-4 border-b border-slate-700 pb-4">
+                        <div class="mac-dots">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <span class="text-xs text-slate-500 font-mono">AspectUtils.java</span>
+                        <div class="w-10"></div> <!-- Spacer -->
+                    </div>
+
+                    <!-- Code Content -->
+                    <div class="flex-1 overflow-x-auto custom-scrollbar font-mono text-sm leading-relaxed">
+                        
+                        <!-- 5.1 Args -->
+                        <div id="tab-args" class="tab-content active text-slate-300">
+                            <div class="mb-4 text-emerald-400/80 italic font-sans text-xs border-l-2 border-emerald-500 pl-3">
+                                // 适用于 @Before, @After 等通知。关键是通过 JoinPoint 获取上下文。
+                            </div>
+<pre>
+<span class="text-purple-400">@Before</span>(<span class="text-green-400">"execution(* com.example.service.UserService.*(..))"</span>)
+<span class="text-purple-400">public void</span> logArgs(JoinPoint joinPoint) {
+    <span class="text-slate-500">// 1. 获取方法签名（方法名）</span>
+    String methodName = joinPoint.getSignature().getName();
+
+    <span class="text-slate-500">// 2. 获取参数列表（数组）</span>
+    Object[] args = joinPoint.getArgs();
+
+    System.out.println(<span class="text-green-400">"正在执行方法: "</span> + methodName);
+    System.out.println(<span class="text-green-400">"参数是: "</span> + Arrays.toString(args));
+}
+</pre>
+                        </div>
+
+                        <!-- 5.2 Return -->
+                        <div id="tab-return" class="tab-content text-slate-300 hidden">
+                             <div class="mb-4 text-emerald-400/80 italic font-sans text-xs border-l-2 border-emerald-500 pl-3">
+                                // 如果你想记录方法的返回值，需要使用 returning 属性，其值必须与参数名一致。
+                            </div>
+<pre>
+<span class="text-slate-500">// returning 的值 "result" 必须和方法参数名一致</span>
+<span class="text-purple-400">@AfterReturning</span>(pointcut = <span class="text-green-400">"execution(* com.service.UserService.*(..))"</span>, returning = <span class="text-green-400">"result"</span>)
+<span class="text-purple-400">public void</span> logResult(Object result) {
+    System.out.println(<span class="text-green-400">"方法执行成功，返回值为: "</span> + result);
+    <span class="text-slate-500">// 注意：在这里你只能读取返回值，不能修改它。</span>
+}
+</pre>
+                        </div>
+
+                        <!-- 5.3 Around -->
+                        <div id="tab-around" class="tab-content text-slate-300 hidden">
+                             <div class="mb-4 text-emerald-400/80 italic font-sans text-xs border-l-2 border-emerald-500 pl-3">
+                                // 最强大的通知。可以修改参数、篡改返回值，甚至阻止目标方法执行。
+                            </div>
+<pre>
+<span class="text-purple-400">@Around</span>(<span class="text-green-400">"execution(* com.service.UserService.getUser(..))"</span>)
+<span class="text-purple-400">public</span> Object auditMethod(ProceedingJoinPoint pjp) <span class="text-purple-400">throws</span> Throwable {
+    Object[] args = pjp.getArgs();
+    
+    <span class="text-slate-500">// 【修改参数】：如果第一个参数是 String，把它改成 "ModifiedName"</span>
+    <span class="text-purple-400">if</span> (args.length > 0 && args[0] <span class="text-purple-400">instanceof</span> String) {
+        args[0] = <span class="text-green-400">"ModifiedName"</span>;
+    }
+
+    Object result = <span class="text-purple-400">null</span>;
+    <span class="text-purple-400">try</span> {
+        <span class="text-slate-500">// 【关键】：执行目标方法。如果不调这行，目标方法就被拦截了！</span>
+        result = pjp.proceed(args); 
+        
+        <span class="text-slate-500">// 【篡改返回值】：</span>
+        <span class="text-purple-400">if</span> (result <span class="text-purple-400">instanceof</span> String) {
+            result = result + <span class="text-green-400">" (被AOP修改了)"</span>;
+        }
+    } <span class="text-purple-400">catch</span> (Throwable e) {
+        <span class="text-purple-400">throw</span> e; 
+    }
+    <span class="text-purple-400">return</span> result;
+}
+</pre>
+                        </div>
+
+                        <!-- 5.4 Annotation -->
+                        <div id="tab-annotation" class="tab-content text-slate-300 hidden">
+                             <div class="mb-4 text-emerald-400/80 italic font-sans text-xs border-l-2 border-emerald-500 pl-3">
+                                // 生产级实战中，推荐使用自定义注解。
+                            </div>
+<pre>
+<span class="text-slate-500">// 1. 定义注解</span>
+<span class="text-purple-400">@Target</span>(ElementType.METHOD)
+<span class="text-purple-400">@Retention</span>(RetentionPolicy.RUNTIME)
+<span class="text-purple-400">public @interface</span> RecordLog { String value() <span class="text-purple-400">default</span> <span class="text-green-400">""</span>; }
+
+<span class="text-slate-500">// 2. 编写切面</span>
+<span class="text-purple-400">@Aspect</span> <span class="text-purple-400">@Component</span>
+<span class="text-purple-400">public class</span> AnnotationAspect {
+    <span class="text-purple-400">@Around</span>(<span class="text-green-400">"@annotation(recordLog)"</span>) 
+    <span class="text-purple-400">public</span> Object log(ProceedingJoinPoint pjp, RecordLog recordLog) <span class="text-purple-400">throws</span> Throwable {
+        String action = recordLog.value();
+        System.out.println(<span class="text-green-400">"执行操作: "</span> + action);
+        <span class="text-purple-400">return</span> pjp.proceed();
+    }
+}
+
+<span class="text-slate-500">// 3. 使用</span>
+<span class="text-purple-400">@RecordLog</span>(<span class="text-green-400">"删除用户"</span>)
+<span class="text-purple-400">public void</span> deleteUser(Long id) { ... }
+</pre>
+                        </div>
+
+                        <!-- 5.5 Reflection (New) -->
+                        <div id="tab-reflection" class="tab-content text-slate-300 hidden">
+                             <div class="mb-4 text-emerald-400/80 italic font-sans text-xs border-l-2 border-emerald-500 pl-3">
+                                // 当无法预知参数类型时，使用 ReflectionUtils 进行通用处理（如统一去空格）。
+                            </div>
+<pre>
+<span class="text-purple-400">@Around</span>(<span class="text-green-400">"execution(* com.service..*.*(..))"</span>)
+<span class="text-purple-400">public</span> Object genericHandle(ProceedingJoinPoint pjp) <span class="text-purple-400">throws</span> Throwable {
+    Object[] args = pjp.getArgs();
+
+    <span class="text-purple-400">for</span> (Object arg : args) {
+        <span class="text-purple-400">if</span> (arg == <span class="text-purple-400">null</span>) <span class="text-purple-400">continue</span>;
+
+        <span class="text-slate-500">// 场景1：利用反射查找并填充字段</span>
+        Field field = ReflectionUtils.findField(arg.getClass(), <span class="text-green-400">"operator"</span>);
+        <span class="text-purple-400">if</span> (field != <span class="text-purple-400">null</span>) {
+            ReflectionUtils.makeAccessible(field);
+            ReflectionUtils.setField(field, arg, <span class="text-green-400">"SystemAdmin"</span>);
+        }
+
+        <span class="text-slate-500">// 场景2：遍历所有字段去空格</span>
+        ReflectionUtils.doWithFields(arg.getClass(), f -> {
+            ReflectionUtils.makeAccessible(f);
+            <span class="text-purple-400">if</span> (f.get(arg) <span class="text-purple-400">instanceof</span> String val) {
+                f.set(arg, val.trim());
+            }
+        });
+    }
+    <span class="text-purple-400">return</span> pjp.proceed(args);
+}
+</pre>
+                        </div>
+
+                         <!-- 5.6 Interface (New) -->
+                         <div id="tab-interface" class="tab-content text-slate-300 hidden">
+                             <div class="mb-4 text-emerald-400/80 italic font-sans text-xs border-l-2 border-emerald-500 pl-3">
+                                // 性能优化：让 DTO 实现公共接口，避免反射损耗，类型更安全。
+                            </div>
+<pre>
+<span class="text-slate-500">// 1. 定义公共接口</span>
+<span class="text-purple-400">public interface</span> BaseEntity {
+    <span class="text-purple-400">void</span> setUpdateTime(Date date);
+    <span class="text-purple-400">void</span> setOperator(String operator);
+}
+
+<span class="text-slate-500">// 2. 切面中直接强转 (高性能)</span>
+<span class="text-purple-400">@Around</span>(<span class="text-green-400">"execution(* com.service..*.*(..))"</span>)
+<span class="text-purple-400">public</span> Object interfaceHandle(ProceedingJoinPoint pjp) <span class="text-purple-400">throws</span> Throwable {
+    Object[] args = pjp.getArgs();
+
+    <span class="text-purple-400">for</span> (Object arg : args) {
+        <span class="text-slate-500">// 只要实现了接口，直接操作，无需反射</span>
+        <span class="text-purple-400">if</span> (arg <span class="text-purple-400">instanceof</span> BaseEntity) {
+            BaseEntity entity = (BaseEntity) arg;
+            entity.setUpdateTime(<span class="text-purple-400">new</span> Date());
+            entity.setOperator(<span class="text-green-400">"SystemAdmin"</span>);
+        }
+    }
+    <span class="text-purple-400">return</span> pjp.proceed(args);
+}
+</pre>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Simulator Section -->
+    <section id="simulator" class="py-24 bg-white relative overflow-hidden">
+        <!-- Decoration -->
+        <div class="absolute -right-20 top-20 w-96 h-96 bg-blue-50 rounded-full blur-3xl opacity-50 pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="mb-12">
+                <h2 class="text-3xl font-extrabold text-slate-900">AOP 执行链模拟器</h2>
+                <p class="text-slate-600 mt-2 text-lg">
+                    可视化演示 <code class="bg-slate-100 px-1.5 py-0.5 rounded text-blue-600 font-mono text-sm">@Around</code> 如何包裹目标方法，以及调用链的执行顺序。
+                </p>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Control Panel -->
+                <div class="bg-white p-8 rounded-3xl border border-slate-200 shadow-xl shadow-slate-200/50 h-fit lg:sticky lg:top-24">
+                    <h3 class="font-bold text-slate-800 mb-6 pb-4 border-b border-slate-100 flex items-center">
+                        <i class="fas fa-sliders-h mr-3 text-blue-500"></i>配置切面
+                    </h3>
+                    
+                    <div class="space-y-4 mb-8">
+                        <label class="flex items-center justify-between p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors group">
+                            <div>
+                                <span class="font-bold text-slate-700 block">权限检查 (Auth)</span>
+                                <span class="text-xs text-slate-500 font-mono">@Before</span>
+                            </div>
+                            <div class="relative">
+                                <input type="checkbox" id="sim-auth" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-500"></div>
+                            </div>
+                        </label>
+                        
+                        <label class="flex items-center justify-between p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors group">
+                            <div>
+                                <span class="font-bold text-slate-700 block">日志记录 (Log)</span>
+                                <span class="text-xs text-slate-500 font-mono">@Around</span>
+                            </div>
+                            <div class="relative">
+                                <input type="checkbox" id="sim-log" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-500"></div>
+                            </div>
+                        </label>
+
+                        <label class="flex items-center justify-between p-4 bg-slate-50 rounded-xl cursor-pointer hover:bg-slate-100 transition-colors group">
+                            <div>
+                                <span class="font-bold text-slate-700 block">事务管理 (Tx)</span>
+                                <span class="text-xs text-slate-500 font-mono">@Around</span>
+                            </div>
+                            <div class="relative">
+                                <input type="checkbox" id="sim-tx" class="sr-only peer">
+                                <div class="w-11 h-6 bg-slate-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="space-y-4 mb-8">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">当前用户 (Context)</label>
+                            <select id="sim-user" class="w-full text-sm p-3 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                                <option value="ADMIN">管理员 (Admin)</option>
+                                <option value="GUEST">访客 (Guest)</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-400 uppercase mb-2">参数 ID (Arg)</label>
+                            <input type="number" id="sim-id" value="1001" class="w-full text-sm p-3 border border-slate-200 rounded-lg bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all">
+                        </div>
+                    </div>
+
+                    <button onclick="runSimulation()" class="w-full bg-slate-900 text-white font-bold py-4 rounded-xl shadow-lg shadow-slate-900/20 hover:bg-blue-600 hover:shadow-blue-500/30 hover:-translate-y-1 transition-all active:scale-95 flex items-center justify-center">
+                        <i class="fas fa-play mr-2"></i> 运行方法
+                    </button>
+                </div>
+
+                <!-- Console Output -->
+                <div class="lg:col-span-2 bg-[#1e1e1e] rounded-3xl p-8 shadow-2xl flex flex-col h-[600px] border border-slate-800 relative overflow-hidden">
+                    <div class="absolute top-0 left-0 w-full h-10 bg-[#2d2d2d] flex items-center px-4 border-b border-black/50 z-10">
+                         <div class="mac-dots mr-4">
+                            <span class="dot-red"></span>
+                            <span class="dot-yellow"></span>
+                            <span class="dot-green"></span>
+                        </div>
+                        <span class="text-xs text-gray-500 font-mono flex-1 text-center">bash — 80x24</span>
+                        <button onclick="clearConsole()" class="text-xs text-gray-400 hover:text-white transition px-2 py-1 rounded hover:bg-white/10">Clear</button>
+                    </div>
+
+                    <div id="sim-console" class="flex-1 overflow-y-auto font-mono text-sm space-y-2 pr-2 mt-8 custom-scrollbar">
+                        <div class="text-gray-500 italic font-mono">> Ready to trace execution...</div>
+                        <div class="text-gray-500 italic font-mono">> Waiting for input...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Pitfall Section -->
+    <section id="pitfalls" class="py-24 bg-red-50/50 border-t border-red-100 relative">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex items-center gap-5 mb-10">
+                <div class="w-14 h-14 bg-red-100 text-red-600 rounded-2xl flex items-center justify-center text-3xl font-bold shadow-sm">
+                    <i class="fas fa-bug"></i>
+                </div>
+                <div>
+                    <h2 class="text-3xl font-extrabold text-slate-900">避坑指南：自调用失效</h2>
+                    <p class="text-red-600 font-medium mt-1">90% 的新手都会踩的坑：为什么 <code>this.method()</code> 不触发切面？</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+                <div>
+                    <div class="bg-white p-8 rounded-3xl border border-slate-100 shadow-sm">
+                        <p class="text-slate-700 mb-8 leading-relaxed text-lg">
+                            Spring AOP 是基于<strong>代理模式 (Proxy)</strong> 实现的。当你直接调用类内部的方法时，你绕过了 Spring 生成的代理对象，直接操作了原始对象。
+                        </p>
+                        
+                        <div class="space-y-6">
+                            <div class="flex items-start p-4 bg-green-50 rounded-xl border border-green-100">
+                                <div class="mt-1 mr-4 bg-green-200 text-green-700 w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-check"></i></div>
+                                <div>
+                                    <strong class="text-slate-900 block mb-1">外部调用 (External)</strong>
+                                    <p class="text-sm text-slate-600">Caller -> <span class="text-blue-600 font-bold">Proxy</span> -> Aspect -> Target。切面生效。</p>
+                                </div>
+                            </div>
+                            
+                            <div class="flex items-start p-4 bg-red-50 rounded-xl border border-red-100">
+                                <div class="mt-1 mr-4 bg-red-200 text-red-700 w-6 h-6 rounded-full flex items-center justify-center text-xs flex-shrink-0"><i class="fas fa-times"></i></div>
+                                <div>
+                                    <strong class="text-slate-900 block mb-1">内部调用 (Internal this)</strong>
+                                    <p class="text-sm text-slate-600">Method A -> <span class="text-red-600 font-bold">this</span>.Method B。绕过代理，直接调用目标。切面失效。</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-8 flex gap-4">
+                        <button onclick="runPitfall('external')" class="flex-1 bg-white border border-green-200 text-green-700 py-4 rounded-xl hover:bg-green-50 hover:shadow-lg transition-all text-sm font-bold flex flex-col items-center gap-1 group">
+                            <span>模拟外部调用</span>
+                            <span class="font-normal text-xs opacity-60 font-mono group-hover:opacity-100">service.methodB()</span>
+                        </button>
+                        <button onclick="runPitfall('internal')" class="flex-1 bg-white border border-red-200 text-red-700 py-4 rounded-xl hover:bg-red-50 hover:shadow-lg transition-all text-sm font-bold flex flex-col items-center gap-1 group">
+                            <span>模拟内部调用</span>
+                            <span class="font-normal text-xs opacity-60 font-mono group-hover:opacity-100">this.methodB()</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Visualizer -->
+                <div class="bg-white rounded-3xl shadow-xl border border-slate-100 p-8 relative min-h-[400px] flex items-center justify-center overflow-hidden" id="pitfall-viz-container">
+                    <div class="text-center text-slate-300" id="viz-placeholder">
+                        <i class="fas fa-project-diagram text-6xl mb-6"></i>
+                        <p class="font-medium">点击左侧按钮<br>观察调用链路可视化</p>
+                    </div>
+                    
+                    <!-- Dynamic Viz will be injected here -->
+                    <div id="viz-content" class="w-full hidden h-full"></div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-slate-900 text-slate-400 py-16">
+        <div class="max-w-7xl mx-auto px-4 text-center">
+            <div class="mb-6 flex justify-center items-center gap-2">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold font-mono text-sm">A</div>
+                <span class="text-white font-bold text-xl">AOP Mastery</span>
+            </div>
+            <p class="text-sm text-slate-500 mb-8 max-w-md mx-auto">专注于 Java 核心技术深度解析。通过交互式体验，让抽象的概念变得触手可及。</p>
+            <div class="text-xs text-slate-600">
+                &copy; 2025 Interactive Learning Series.
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Implementation -->
+    <script>
+        // --- 1. Chart.js Implementation ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const ctx = document.getElementById('complexityChart').getContext('2d');
+            
+            // Gradient for datasets
+            const gradientBlue = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientBlue.addColorStop(0, '#3b82f6');
+            gradientBlue.addColorStop(1, '#2563eb');
+
+            const gradientGray = ctx.createLinearGradient(0, 0, 0, 400);
+            gradientGray.addColorStop(0, '#94a3b8');
+            gradientGray.addColorStop(1, '#64748b');
+
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['OOP (传统模式)', 'AOP (切面模式)'],
+                    datasets: [
+                        {
+                            label: '核心业务逻辑',
+                            data: [30, 30],
+                            backgroundColor: '#3b82f6',
+                            borderRadius: 8,
+                            barPercentage: 0.6
+                        },
+                        {
+                            label: '非业务样板代码',
+                            data: [70, 0],
+                            backgroundColor: '#cbd5e1',
+                            borderRadius: 8,
+                            barPercentage: 0.6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { stacked: true, grid: { display: false } },
+                        y: { stacked: true, display: false }
+                    },
+                    plugins: {
+                        legend: { position: 'bottom', labels: { padding: 20, usePointStyle: true } },
+                        tooltip: {
+                            backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                            padding: 12,
+                            cornerRadius: 8,
+                            callbacks: {
+                                label: (context) => context.dataset.label + ': ' + context.raw + '%'
+                            }
+                        }
+                    },
+                    animation: {
+                        duration: 2000,
+                        easing: 'easeOutQuart'
+                    }
+                }
+            });
+        });
+
+        // --- 2. Burger Terminology Logic ---
+        const terms = {
+            aspect: {
+                title: "切面 (Aspect)",
+                desc: "关注点的模块化封装。在 Java 中通常是一个带有 <code>@Aspect</code> 注解的类。它像汉堡的面包一样，包裹着核心业务，包含了通知（Advice）和切入点（Pointcut）。",
+                color: "text-amber-600"
+            },
+            pointcut: {
+                title: "切入点 (Pointcut)",
+                desc: "定位器。它定义了切面**在哪里**生效。比如表达式 <code>execution(* delete*(..))</code> 告诉 Spring：“只把我的逻辑加在所有 delete 开头的方法上”。",
+                color: "text-green-600"
+            },
+            joinpoint: {
+                title: "连接点 (Joinpoint)",
+                desc: "程序执行的某个具体时刻（如方法调用前、抛出异常时）。程序运行中充满着连接点，但只有被切入点选中的，才会触发切面逻辑。",
+                color: "text-red-500"
+            },
+            target: {
+                title: "目标对象 (Target)",
+                desc: "被代理的原始对象（核心业务）。它只包含纯粹的业务逻辑（比如存钱、取钱），完全不知道外层切面的存在，保证了代码的高内聚。",
+                color: "text-amber-800"
+            },
+            weaving: {
+                title: "织入 (Weaving)",
+                desc: "组装过程。把切面应用到目标对象并创建新的代理对象的过程。Spring AOP 通常在运行时动态完成这个过程。",
+                color: "text-amber-600"
+            }
+        };
+
+        function selectTerm(key) {
+            const data = terms[key];
+            const container = document.getElementById('term-content');
+            
+            // Reset content with animation
+            container.innerHTML = `
+                <div class="text-center animate-fade-up">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-slate-50 rounded-2xl mb-6 shadow-sm">
+                        <i class="fas fa-info-circle text-2xl ${data.color}"></i>
+                    </div>
+                    <h3 class="text-3xl font-extrabold ${data.color} mb-6 tracking-tight">${data.title}</h3>
+                    <p class="text-lg text-slate-600 leading-relaxed max-w-lg mx-auto font-medium">${data.desc}</p>
+                </div>
+            `;
+            
+            // Highlight active burger layer
+            document.querySelectorAll('.burger-layer').forEach(el => el.classList.remove('active'));
+            // Note: Since we use onclick inline, we don't have direct ref to 'this' easily without passing it.
+            // In a real app we'd manage state properly. For visual effect, let's rely on the card update.
+        }
+
+        // --- 3. Tab Logic ---
+        function switchCodeTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'border-blue-600', 'text-blue-600', 'bg-slate-50');
+                el.classList.add('text-slate-500', 'border-transparent');
+            });
+            
+            document.getElementById(`tab-${tabId}`).classList.remove('hidden');
+            const btn = document.getElementById(`btn-${tabId}`);
+            btn.classList.add('active', 'border-blue-600', 'text-blue-600', 'bg-slate-50');
+            btn.classList.remove('text-slate-500', 'border-transparent');
+        }
+
+        // --- 4. Simulator Logic ---
+        const consoleEl = document.getElementById('sim-console');
+
+        function log(msg, colorClass = "text-gray-300", delay = 0) {
+            setTimeout(() => {
+                const div = document.createElement('div');
+                div.className = `console-line ${colorClass} pl-4 border-l-2 border-transparent font-mono py-0.5 hover:bg-white/5`;
+                // Add border color based on text color class for visual cue
+                if(colorClass.includes('blue')) div.style.borderLeftColor = '#3b82f6';
+                if(colorClass.includes('green')) div.style.borderLeftColor = '#22c55e';
+                if(colorClass.includes('red')) div.style.borderLeftColor = '#ef4444';
+                if(colorClass.includes('purple')) div.style.borderLeftColor = '#a855f7';
+                
+                div.innerHTML = `<span class="opacity-40 text-[10px] mr-3 font-sans w-12 inline-block text-right">${new Date().toLocaleTimeString().split(' ')[0]}</span>${msg}`;
+                consoleEl.appendChild(div);
+                consoleEl.scrollTop = consoleEl.scrollHeight;
+            }, delay);
+        }
+
+        function clearConsole() {
+            consoleEl.innerHTML = '<div class="text-gray-500 italic font-mono">> Console cleared.</div>';
+        }
+
+        function runSimulation() {
+            clearConsole();
+            
+            const useAuth = document.getElementById('sim-auth').checked;
+            const useLog = document.getElementById('sim-log').checked;
+            const useTx = document.getElementById('sim-tx').checked;
+            const user = document.getElementById('sim-user').value;
+            const paramId = document.getElementById('sim-id').value;
+            
+            let time = 0;
+            const step = 500;
+
+            log("System: Request received for proxy.deleteUser(" + paramId + ")", "text-white font-bold", time);
+            time += step;
+
+            // 1. Transaction Start
+            if (useTx) {
+                log("Aspect(Tx): <span class='text-amber-400'>@Around [Pre]</span> - 开启数据库事务 (Begin Transaction)", "text-amber-200", time);
+                time += step;
+            }
+
+            // 2. Logging Start
+            if (useLog) {
+                log(`Aspect(Log): <span class='text-blue-400'>@Around [Pre]</span> - 拦截参数 ID: ${paramId}`, "text-blue-200", time);
+                if (paramId === "0") {
+                    log(`Aspect(Log): ⚠️ 检测到 ID 为 0，篡改为 1 (演示参数修改)`, "text-yellow-400 font-bold", time);
+                }
+                time += step;
+            }
+
+            // 3. Auth
+            if (useAuth) {
+                log(`Aspect(Auth): <span class='text-purple-400'>@Before</span> - 检查 Context 用户: ${user}`, "text-purple-200", time);
+                time += step;
+                
+                if (user !== "ADMIN") {
+                    log("Aspect(Auth): ⛔ 权限不足！抛出 SecurityException", "text-red-500 font-bold", time);
+                    time += step;
+                    if (useTx) {
+                         log("Aspect(Tx): <span class='text-amber-400'>@AfterThrowing</span> - 回滚事务 (Rollback)", "text-amber-200", time);
+                    }
+                    log("System: Execution terminated via Exception.", "text-red-400", time + 100);
+                    return;
+                }
+                
+                log("Aspect(Auth): ✅ 权限验证通过", "text-green-400", time);
+                time += step;
+            }
+
+            // 4. Target
+            log(`Target: ⚙️ 执行 SQL DELETE FROM users WHERE id=${paramId === "0" ? "1" : paramId}`, "text-emerald-300 font-bold bg-emerald-900/20 p-1 rounded", time);
+            time += step;
+
+            // 5. Logging End
+            if (useLog) {
+                log("Aspect(Log): <span class='text-blue-400'>@Around [Post]</span> - 计算耗时: 24ms", "text-blue-200", time);
+                time += step;
+            }
+
+            // 6. Transaction Commit
+            if (useTx) {
+                log("Aspect(Tx): <span class='text-amber-400'>@Around [Post]</span> - 提交事务 (Commit)", "text-amber-200", time);
+                time += step;
+            }
+
+            log("System: Method returned void successfully.", "text-gray-400", time);
+        }
+
+        // --- 5. Pitfall Visualizer Logic ---
+        function runPitfall(type) {
+            const container = document.getElementById('viz-content');
+            const placeholder = document.getElementById('viz-placeholder');
+            
+            placeholder.classList.add('hidden');
+            container.classList.remove('hidden');
+
+            if (type === 'external') {
+                container.innerHTML = `
+                    <div class="flex items-center justify-center gap-2 h-full w-full animate-fade-up">
+                        <div class="flex flex-col items-center">
+                            <i class="fas fa-user text-slate-400 text-2xl mb-2"></i>
+                            <div class="bg-slate-800 text-white text-[10px] px-2 py-1 rounded">Caller</div>
+                        </div>
+                        
+                        <div class="flex-1 h-0.5 bg-slate-300 relative">
+                            <div class="absolute -top-3 left-1/2 -translate-x-1/2 text-xs text-slate-400">call()</div>
+                            <i class="fas fa-chevron-right absolute -top-[5px] right-0 text-slate-300 text-xs"></i>
+                        </div>
+
+                        <!-- Proxy Box -->
+                        <div class="border-2 border-blue-500 border-dashed rounded-xl p-4 bg-blue-50/50 relative w-64">
+                            <span class="absolute -top-3 left-4 bg-blue-500 text-white text-[10px] px-2 py-0.5 rounded shadow-sm">Proxy Object</span>
+                            
+                            <div class="bg-blue-100 text-blue-700 text-xs p-2 rounded mb-3 text-center font-bold border border-blue-200 shadow-sm flex items-center justify-center gap-2">
+                                <i class="fas fa-bolt text-yellow-500"></i> Aspect Logic (切面生效)
+                            </div>
+                            
+                            <div class="bg-white border border-slate-200 p-3 rounded-lg shadow-sm">
+                                <span class="text-[10px] text-slate-400 uppercase font-bold tracking-wider">Target Object</span>
+                                <div class="font-bold text-slate-800 mt-1 text-sm">methodB()</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            } else {
+                container.innerHTML = `
+                    <div class="flex items-center justify-center gap-2 h-full w-full animate-fade-up">
+                         <!-- Outer Proxy Shell (Bypassed) -->
+                        <div class="border-2 border-blue-200 border-dashed rounded-xl p-3 bg-slate-50 relative w-64 opacity-60 grayscale">
+                             <span class="absolute -top-3 left-4 bg-slate-400 text-white text-[10px] px-2 py-0.5 rounded">Proxy Object</span>
+                             <div class="text-center text-[10px] text-slate-400 mt-2">External Call passes here...</div>
+                        </div>
+
+                        <!-- Target Object Internal View -->
+                        <div class="bg-white border-2 border-red-200 p-5 rounded-xl shadow-lg relative w-64 ml-[-180px] z-10">
+                             <span class="absolute -top-3 right-4 bg-red-500 text-white text-[10px] px-2 py-0.5 rounded shadow-sm">Target Object (this)</span>
+                             
+                             <div class="mb-4 p-2 bg-slate-50 rounded border border-slate-100">
+                                <div class="font-bold text-sm text-slate-700">methodA()</div>
+                                <!-- Direct Internal Arrow -->
+                                <div class="h-6 w-0.5 bg-red-400 ml-4 relative my-1">
+                                     <i class="fas fa-chevron-down absolute -bottom-1 -left-[3px] text-red-400 text-[10px]"></i>
+                                </div>
+                                <div class="text-[10px] text-red-500 font-mono ml-2 font-bold bg-red-50 inline-block px-1 rounded">this.methodB()</div>
+                             </div>
+
+                             <div class="p-2 bg-red-50 border border-red-100 rounded">
+                                <div class="font-bold text-sm text-slate-800">methodB()</div>
+                                <div class="text-[10px] text-red-500 mt-1 font-bold flex items-center gap-1">
+                                    <i class="fas fa-ban"></i> 无切面！直接执行
+                                </div>
+                             </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
