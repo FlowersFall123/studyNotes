@@ -715,11 +715,11 @@ List<ItemDTO> items = response.getBody();
 PREFER_HOST_MODE=hostname
 MODE=standalone
 SPRING_DATASOURCE_PLATFORM=mysql
-MYSQL_SERVICE_HOST=192.168.195.131       # MySQL 容器/宿主机 IP
-MYSQL_SERVICE_DB_NAME=nacos              # 数据库名
-MYSQL_SERVICE_PORT=3306                  # MySQL 端口
-MYSQL_SERVICE_USER=root                  # MySQL 用户
-MYSQL_SERVICE_PASSWORD=123               # MySQL 密码
+MYSQL_SERVICE_HOST=192.168.195.131       
+MYSQL_SERVICE_DB_NAME=nacos              
+MYSQL_SERVICE_PORT=3306                 
+MYSQL_SERVICE_USER=root                 
+MYSQL_SERVICE_PASSWORD=123              
 MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Shanghai
 ```
 
@@ -737,6 +737,7 @@ Nacos 启动需要的表结构和默认账号，官方提供了 **mysql-schema.s
 
 👉 **官方 GitHub 链接**：
  [Nacos mysql-schema.sql（GitHub）](https://github.com/alibaba/nacos/blob/develop/distribution/conf/mysql-schema.sql)
+ **建议先使用文件中提供的nacos.sql文件**
 
 ### 4. 启动 Nacos 容器
 
