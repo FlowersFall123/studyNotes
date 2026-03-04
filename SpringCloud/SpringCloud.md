@@ -357,7 +357,7 @@ public List<User> queryUsers(String name, Integer status, Integer minBalance, In
 ### 1、 启动虚拟机 + Mobaxterm
 
 👉 参考文档：[Linux环境搭建 - 飞书云文档](https://b11et3un53m.feishu.cn/wiki/FJAnwOhpIihMkLkOKQocdWZ7nUc)
- centos安装网址：https://mirrors.aliyun.com/centos/7/isos/x86_64/
+ centos安装网址：https://www.centos.org/download/
  安装完虚拟机后，用 **MobaXterm** 远程连接。
 
 ------
