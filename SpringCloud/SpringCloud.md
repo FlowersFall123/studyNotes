@@ -736,7 +736,7 @@ MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=
 Nacos 启动需要的表结构和默认账号，官方提供了 **mysql-schema.sql** 文件：
 
 👉 **官方 GitHub 链接**：
- [Nacos mysql-schema.sql（GitHub）](https://github.com/alibaba/nacos/blob/develop/distribution/conf/mysql-schema.sql)
+ [Nacos mysql-schema.sql（GitHub）](https://github.com/alibaba/nacos/blob/master/distribution/conf/mysql-schema.sql)
  **建议先使用文件中提供的nacos.sql文件**
 
 ### 4. 启动 Nacos 容器
